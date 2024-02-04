@@ -253,13 +253,21 @@ int dbOpen(_In_ char* fileName) {
         goto error;
     }
 
-    // Connect to the database
-    ret = SQLDriverConnect(hdbc, NULL, (SQLCHAR*)connectionStringW, SQL_NTS, NULL, 0, NULL, SQL_DRIVER_NOPROMPT);
-    if (ret != SQL_SUCCESS && ret != SQL_SUCCESS_WITH_INFO) {
-        fprintf(stderr, "Error connecting to SQL Server\n");
-        SQLFreeHandle(SQL_HANDLE_DBC, hdbc);
-        SQLFreeHandle(SQL_HANDLE_ENV, henv);
-        return 1;
+    if (!!connectionStringW)
+    {
+
+        // Connect to the database
+        ret = SQLDriverConnect(hdbc, NULL, (SQLCHAR*)connectionStringW, SQL_NTS, NULL, 0, NULL, SQL_DRIVER_NOPROMPT);
+        if (ret != SQL_SUCCESS && ret != SQL_SUCCESS_WITH_INFO) {
+            fprintf(stderr, "Error connecting to SQL Server\n");
+            SQLFreeHandle(SQL_HANDLE_DBC, hdbc);
+            SQLFreeHandle(SQL_HANDLE_ENV, henv);
+            return 1;
+        }
+    }
+    else
+    {
+        printf("ERROR: The connection string is unavaible.");
     }
 
 error:

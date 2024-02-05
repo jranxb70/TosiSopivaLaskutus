@@ -1,7 +1,11 @@
 #include <stdio.h>
 #include "DatabaseEngine.h"
 
-
+/**
+* This function returns a path to the working directory.
+* @param pWorkingDir: A path to the working directory of the application
+* @return: An integer value indication a success or an error in the function
+*/
 _Success_(return == 0)
 int getWorkingDir(_Out_ char** pWorkingDir)
 {
@@ -39,7 +43,17 @@ error:
     return ret;
 }
 
-int getConnectionString(_Inout_ char** workingDirectory, _In_ char* fileName, _Out_ char** connectionString)
+/**
+* This function returns a connection string.
+* @param workingDirectory: A path to the working directory of the application
+* @param fileName: A name of the file that must contain the connection string
+* @param connectionString: A connection string
+* @return: An integer value indication a success or an error in the function
+*/
+int getConnectionString(
+    _Inout_ char** workingDirectory, 
+    _In_ char* fileName, 
+    _Out_ char** connectionString)
 {
     int ret = 0;
 
@@ -92,7 +106,15 @@ error:
     return ret;
 }
 
-int readFile(_In_ char** workingDirectory, _Out_ char** connectionString)
+/**
+* This function reads a content of a file in the file system.
+* @param workingDirectory: A path to the working directory of the application
+* @param connectionString: A connection string
+* @return: An integer value indication a success or an error in the function
+*/
+int readFile(
+    _In_ char** workingDirectory, 
+    _Out_ char** connectionString)
 {
     int ret = 0;
     FILE* file = NULL;
@@ -212,14 +234,26 @@ SQLRETURN ret; // Return code
 SQLCHAR result[SQL_RESULT_LEN];
 SQLCHAR retcode[SQL_RETURN_CODE_LEN];
 
-int dbOpen(_In_ char* fileName) {
+/**
+* This function open the connection to a database using an ODBC driver.
+* @param fileName: A name of the file that must contain the connection string
+* @return: An integer value indication a success or an error in the function.
+*          Zero means that the function has succeeded
+*/
+int dbOpen(
+    _In_ char* fileName) 
+{
     int err = 0;
+
+    char* workingDirectory = NULL;
+    char* connectionStringW = NULL;
 
     // Allocate an environment handle
     ret = SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &henv);
     if (ret != SQL_SUCCESS && ret != SQL_SUCCESS_WITH_INFO) {
         fprintf(stderr, "Error allocating environment handle\n");
-        return 1;
+        ret = ERROR_CODE;
+        goto error;
     }
 
     // Set the ODBC version
@@ -227,7 +261,8 @@ int dbOpen(_In_ char* fileName) {
     if (ret != SQL_SUCCESS && ret != SQL_SUCCESS_WITH_INFO) {
         fprintf(stderr, "Error setting ODBC version\n");
         SQLFreeHandle(SQL_HANDLE_ENV, henv);
-        return 1;
+        ret = ERROR_CODE;
+        goto error;
     }
 
     // Allocate a connection handle
@@ -235,11 +270,9 @@ int dbOpen(_In_ char* fileName) {
     if (ret != SQL_SUCCESS && ret != SQL_SUCCESS_WITH_INFO) {
         fprintf(stderr, "Error allocating connection handle\n");
         SQLFreeHandle(SQL_HANDLE_ENV, henv);
-        return 1;
+        ret = ERROR_CODE;
+        goto error;
     }
-
-    char* workingDirectory = NULL;
-    char* connectionStringW = NULL;
 
     if (-1 == (err = getWorkingDir(&workingDirectory)))
     {
@@ -255,14 +288,14 @@ int dbOpen(_In_ char* fileName) {
 
     if (!!connectionStringW)
     {
-
         // Connect to the database
         ret = SQLDriverConnect(hdbc, NULL, (SQLCHAR*)connectionStringW, SQL_NTS, NULL, 0, NULL, SQL_DRIVER_NOPROMPT);
         if (ret != SQL_SUCCESS && ret != SQL_SUCCESS_WITH_INFO) {
             fprintf(stderr, "Error connecting to SQL Server\n");
             SQLFreeHandle(SQL_HANDLE_DBC, hdbc);
             SQLFreeHandle(SQL_HANDLE_ENV, henv);
-            return 1;
+            ret = ERROR_CODE;
+            goto error;
         }
     }
     else
@@ -343,7 +376,8 @@ void queryInvoicesByCustomer(int customer_id)
         SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
 }
 
-void addInvoiceLine(int invoice_id, 
+void addInvoiceLine(
+    int invoice_id, 
     char* invoiceline_product, 
     int invoiceline_quantity, 
     double invoiceline_price)

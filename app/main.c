@@ -9,7 +9,7 @@
 
 int main(int argc, char *argv[])
 {
-    if (argc < 3)
+    if (argc < 2)
     {
         fprintf(stdout, "%s\n", "Insufficient input - enter a value.");
         return 1;
@@ -45,33 +45,36 @@ int main(int argc, char *argv[])
     int quantity3 = 6;
     double price3 = 2.04;
 
-    dbOpen(argv[2]);
+    int ret = dbOpen(argv[1]);
 
-    // addCustomer(firstName, lastName, address, zip, city, &customer_id);
+    if (ret > 0)
+    {
+        // addCustomer(firstName, lastName, address, zip, city, &customer_id);
 
-    bankreference = bankreference + customer_id;
-    int bankreferenceOut = 0;
-    int* ref = NULL;
-    ref = &bankreferenceOut;
-    calcNewReference(bankreference, ref);
+        bankreference = bankreference + customer_id;
+        int bankreferenceOut = 0;
+        int* ref = NULL;
+        ref = &bankreferenceOut;
+        calcNewReference(bankreference, ref);
 
-    char invoice_bankreference[20]; // Buffer big enough for a 32-bit number
+        char invoice_bankreference[20]; // Buffer big enough for a 32-bit number
 
-    snprintf(invoice_bankreference, sizeof(invoice_bankreference), "%d", bankreferenceOut);
+        snprintf(invoice_bankreference, sizeof(invoice_bankreference), "%d", bankreferenceOut);
 
-    invoice_subtotal = quantity * price + quantity2 * price2 + quantity3 * price3;
-    invoice_total = invoice_subtotal * 1.25;
-    invoice_tax = invoice_total - invoice_subtotal;
+        invoice_subtotal = quantity * price + quantity2 * price2 + quantity3 * price3;
+        invoice_total = invoice_subtotal * 1.25;
+        invoice_tax = invoice_total - invoice_subtotal;
 
-    //addInvoice(customer_id, invoice_date, invoice_bankreference, invoice_subtotal, invoice_tax, invoice_total, &invoice_id);
+        //addInvoice(customer_id, invoice_date, invoice_bankreference, invoice_subtotal, invoice_tax, invoice_total, &invoice_id);
 
-    //addInvoiceLine(invoice_id, product, quantity, price);
-    //addInvoiceLine(invoice_id, product2, quantity2, price2);
-    //addInvoiceLine(invoice_id, product3, quantity3, price3);
+        //addInvoiceLine(invoice_id, product, quantity, price);
+        //addInvoiceLine(invoice_id, product2, quantity2, price2);
+        //addInvoiceLine(invoice_id, product3, quantity3, price3);
 
-    queryInvoicesByCustomer(customer_id);
+        queryInvoicesByCustomer(customer_id);
 
-    dbClose();
+        dbClose();
+    }
 
     return 0;
 }

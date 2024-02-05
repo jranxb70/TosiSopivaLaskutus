@@ -14,36 +14,38 @@
 extern "C" {
 #endif
 
-	int DB_ENGINE_LIBRARY_EXPORT dbOpen(_In_ char* fileName);
+	int DB_ENGINE_LIBRARY_EXPORT dbOpen(
+		_In_ char*					fileName);
+
 	void DB_ENGINE_LIBRARY_EXPORT dbClose();
 
 	void DB_ENGINE_LIBRARY_EXPORT createTables();
 
 	void DB_ENGINE_LIBRARY_EXPORT addCustomer(
-		char* customer_firstName, 
-		char* customer_lastName, 
-		char* customer_address, 
-		char* customer_zip, 
-		char* customer_city, 
-		int* customer_id);
+		_In_ char*					customer_firstName,
+		_In_ char*					customer_lastName,
+		_In_ char*					customer_address,
+		_In_ char*					customer_zip,
+		_In_ char*					customer_city,
+		_Out_ int*					customer_id);
 
 	void DB_ENGINE_LIBRARY_EXPORT queryInvoicesByCustomer(
-		int customer_id);
+		_In_ int					customer_id);
 
 	void DB_ENGINE_LIBRARY_EXPORT addInvoiceLine(
-		int invoice_id,
-		char* invoiceline_product,
-		int invoiceline_quantity,
-		double invoiceline_price);
+		_In_ int					invoice_id,
+		_In_ char*					invoiceline_product,
+		_In_ int					invoiceline_quantity,
+		_In_ double					invoiceline_price);
 
 	void DB_ENGINE_LIBRARY_EXPORT addInvoice(
-		int customer_id,
-		SQL_TIMESTAMP_STRUCT invoice_date,
-		char* invoice_bankreference,
-		double               invoice_subtotal,
-		double               invoice_tax,
-		double               invoice_total,
-		int*                 invoice_idOut);
+		_In_ int					customer_id,
+		_In_ SQL_TIMESTAMP_STRUCT	invoice_date,
+		_In_ char*					invoice_bankreference,
+		_In_ double					invoice_subtotal,
+		_In_ double					invoice_tax,
+		_In_ double					invoice_total,
+		_Out_ int*					invoice_idOut);
 
 #ifdef __cplusplus
 }
@@ -51,15 +53,15 @@ extern "C" {
 
 	_Success_(return == 0)
 	int getWorkingDir(
-		_Out_ char** pWorkingDir);
+		_Out_ char**				pWorkingDir);
 
 	int getConnectionString(
-		_Inout_ char** workingDirectory, 
-		_In_ char* fileName, 
-		_Out_ char** connectionString);
+		_Inout_ char**				workingDirectory, 
+		_In_ char*					fileName, 
+		_Out_ char**				connectionString);
 
 	int readFile(
-		_In_ char** workingDirectory, 
-		_Out_ char** connectionString);
+		_In_ char**					workingDirectory, 
+		_Out_ char**				connectionString);
 
 #endif // DATABASE_ENGINE_H

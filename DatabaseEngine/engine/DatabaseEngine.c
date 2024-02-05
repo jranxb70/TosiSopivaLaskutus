@@ -3,6 +3,7 @@
 
 /**
 * This function returns a path to the working directory.
+* 
 * @param pWorkingDir: A path to the working directory of the application
 * @return: An integer value indication a success or an error in the function
 */
@@ -45,6 +46,7 @@ error:
 
 /**
 * This function returns a connection string.
+* 
 * @param workingDirectory: A path to the working directory of the application
 * @param fileName: A name of the file that must contain the connection string
 * @param connectionString: A connection string
@@ -108,6 +110,7 @@ error:
 
 /**
 * This function reads a content of a file in the file system.
+* 
 * @param workingDirectory: A path to the working directory of the application
 * @param connectionString: A connection string
 * @return: An integer value indication a success or an error in the function
@@ -123,7 +126,7 @@ int readFile(
 
     errno_t err = fopen_s(&file, *workingDirectory, L"r, ccs=UTF-8");
     if (err != 0) {
-        wprintf(L"Cannot open file.\n");
+        printf("Cannot open file.\n");
         return -1;
     }
 
@@ -236,6 +239,7 @@ SQLCHAR retcode[SQL_RETURN_CODE_LEN];
 
 /**
 * This function open the connection to a database using an ODBC driver.
+* 
 * @param fileName: A name of the file that must contain the connection string
 * @return: An integer value indication a success or an error in the function.
 *          Zero means that the function has succeeded
@@ -309,6 +313,9 @@ error:
     return ret;
 }
 
+/**
+* This function ....
+*/
 void dbClose()
 {
     // Disconnect and free handles
@@ -317,6 +324,11 @@ void dbClose()
     SQLFreeHandle(SQL_HANDLE_ENV, henv);
 }
 
+/**
+* This function ...
+*
+* @param customer_id: ...
+*/
 void queryInvoicesByCustomer(int customer_id)
 {
         SQLHSTMT hstmt;
@@ -376,11 +388,19 @@ void queryInvoicesByCustomer(int customer_id)
         SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
 }
 
+/**
+* This function ...
+*
+* @param invoice_id: ...
+* @param invoiceline_product: ...
+* @param invoiceline_quantity: ...
+* @param invoiceline_price: ...
+*/
 void addInvoiceLine(
-    int invoice_id, 
-    char* invoiceline_product, 
-    int invoiceline_quantity, 
-    double invoiceline_price)
+    _In_ int invoice_id, 
+    _In_ char* invoiceline_product,
+    _In_ int invoiceline_quantity,
+    _In_ double invoiceline_price)
 {
     SQLHSTMT hstmt;
     SQLINTEGER id_invoice;
@@ -429,14 +449,25 @@ void addInvoiceLine(
     }
 }
 
-
-void addInvoice(int customer_id, 
-                SQL_TIMESTAMP_STRUCT invoice_date, 
-                char*                invoice_bankreference, 
-                double               invoice_subtotal, 
-                double               invoice_tax, 
-                double               invoice_total, 
-                int*                 invoice_idOut)
+/**
+* This function adds a new invoice into the database.
+*
+* @param customer_id:
+* @param invoice_date:
+* @param invoice_bankreference:
+* @param invoice_subtotal:
+* @param invoice_tax:
+* @param invoice_total:
+* @param invoice_idOut:
+*/
+void addInvoice(
+    _In_ int                    customer_id,
+    _In_ SQL_TIMESTAMP_STRUCT   invoice_date,
+    _In_ char*                  invoice_bankreference,
+    _In_ double                 invoice_subtotal,
+    _In_ double                 invoice_tax,
+    _In_ double                 invoice_total,
+    _Out_ int*                  invoice_idOut)
 {
     SQLHSTMT hstmt;
     SQLINTEGER id_invoice;
@@ -494,7 +525,23 @@ void addInvoice(int customer_id,
     }
 }
 
-void addCustomer(char* customer_firstName, char* customer_lastName, char* customer_address, char* customer_zip, char* customer_city, int* customer_id)
+/**
+* This function adds a new customer into the database.
+*
+* @param customer_firstName:
+* @param customer_lastName:
+* @param customer_address:
+* @param customer_zip:
+* @param customer_city:
+* @param customer_id:
+*/
+void addCustomer(
+    _In_ char* customer_firstName,
+    _In_ char* customer_lastName,
+    _In_ char* customer_address,
+    _In_ char* customer_zip,
+    _In_ char* customer_city,
+    _Out_ int* customer_id)
 {
     char query[1024];
     size_t bufferCount = 1024;     
@@ -541,6 +588,10 @@ void addCustomer(char* customer_firstName, char* customer_lastName, char* custom
     }
 }
 
+/**
+* This functions adds three tables into a database.
+* The tables are: a customer, an invoice and an invoice_line tables.
+*/
 void createTables()
 {
     // Assume you have a stored procedure named "CreateTablesIfNotExist"

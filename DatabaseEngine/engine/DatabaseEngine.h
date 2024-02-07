@@ -29,6 +29,11 @@ extern "C" {
 		_In_ char*					customer_city,
 		_Out_ int*					customer_id);
 
+	char DB_ENGINE_LIBRARY_EXPORT *getInvoicesAsjson_data(
+		_In_ int                    customer_id);
+
+	int DB_ENGINE_LIBRARY_EXPORT free_json_data();
+
 	void DB_ENGINE_LIBRARY_EXPORT queryInvoicesByCustomer(
 		_In_ int					customer_id);
 

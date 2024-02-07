@@ -2,6 +2,11 @@
 #include "DatabaseEngine.h"
 
 /**
+* This data is global due to another function must be able to free the memory.
+*/
+char* json_data = NULL;
+
+/**
 * This function returns a path to the working directory.
 * 
 * @param pWorkingDir: A path to the working directory of the application
@@ -139,7 +144,7 @@ int readFile(
         int b = -1;
         int i = 0;
         while ((b = fgetc(file)) != EOF) {
-            printf("%d ", b);
+            // printf("%d ", b);
             integers[i] = b;
             i++;
         }
@@ -314,7 +319,7 @@ error:
 }
 
 /**
-* This function ....
+* This function closes the ODBC connection to the Sql Server database.
 */
 void dbClose()
 {
@@ -325,11 +330,35 @@ void dbClose()
 }
 
 /**
+* 
+*/
+char* getInvoicesAsjson_data(_In_ int customer_id) 
+{
+    // Allocate memory for JSON data
+    json_data = malloc(100);  // Example: allocating 100 bytes
+    if (json_data == NULL) {
+        perror("Error allocating memory for JSON data");
+        exit(EXIT_FAILURE);
+    }
+
+    // Populate the allocated memory with JSON data
+    strcpy(json_data, "{\"key\": \"value\"}");  // Example: JSON data
+
+    return json_data;
+}
+
+int free_json_data() {
+    int done = 744;
+    free(json_data);
+    return done;
+}
+
+/**
 * This function ...
 *
 * @param customer_id: ...
 */
-void queryInvoicesByCustomer(int customer_id)
+void queryInvoicesByCustomer(_In_ int customer_id)
 {
         SQLHSTMT hstmt;
         SQLRETURN retcode;

@@ -16,10 +16,10 @@ int main(int argc, char *argv[])
     printf("%s\n", argv[0]);
     printf("%s\n", argv[1]);
 
-    char firstName[50] = "Päivi";
-    char lastName[50] = "Lepistö";
-    char address[50] = "Vellamonrinne 13";
-    char zip[50] = "60220";
+    char firstName[50] = "Testi";
+    char lastName[50] = "Kommunisti";
+    char address[50] = "Huhtalantie 50";
+    char zip[50] = "60200";
     char city[50] = "Seinäjoki";
 
     int customer_id = 73;

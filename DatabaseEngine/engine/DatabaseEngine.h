@@ -7,7 +7,10 @@
 #include <sql.h>
 #include <sqlext.h>
 
-#define ERROR_CODE -1
+#define ERROR_INITIAL                        0
+#define ERROR_CODE                          -1
+#define ERROR_CONNECTION_STRING_UNAVAILABLE -2
+#define ERROR_DBOPEN_FAILED                 -3
 
 // Function declaration
 #ifdef __cplusplus
@@ -29,13 +32,14 @@ extern "C" {
 		_In_ char*					customer_city,
 		_Out_ int*					customer_id);
 
-	char DB_ENGINE_LIBRARY_EXPORT *getInvoicesAsjson_data(
-		_In_ int                    customer_id);
+	//char DB_ENGINE_LIBRARY_EXPORT* getInvoicesAsjson_data(
+	//	_In_ int                    customer_id);
 
 	int DB_ENGINE_LIBRARY_EXPORT free_json_data();
 
 	void DB_ENGINE_LIBRARY_EXPORT queryInvoicesByCustomer(
-		_In_ int					customer_id);
+		_In_ int					customer_id, 
+		_Out_ char**				jsonString);
 
 	void DB_ENGINE_LIBRARY_EXPORT addInvoiceLine(
 		_In_ int					invoice_id,
@@ -56,17 +60,13 @@ extern "C" {
 }
 #endif
 
-	_Success_(return == 0)
-	int getWorkingDir(
-		_Out_ char**				pWorkingDir);
-
-	int getConnectionString(
-		_Inout_ char**				workingDirectory, 
-		_In_ char*					fileName, 
-		_Out_ char**				connectionString);
-
 	int readFile(
 		_In_ char**					workingDirectory, 
 		_Out_ char**				connectionString);
+
+	int getInvoiceData(
+		_In_ int					customer_id,
+		_In_ int					invoice_id,
+		_In_ char*					bank_reference);
 
 #endif // DATABASE_ENGINE_H

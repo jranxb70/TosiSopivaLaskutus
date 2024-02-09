@@ -1,117 +1,11 @@
 #include <stdio.h>
 #include "DatabaseEngine.h"
+#include "Utilities.h"
 
 /**
 * This data is global due to another function must be able to free the memory.
 */
 char* json_data = NULL;
-
-/**
-* This function returns a path to the working directory.
-* 
-* @param pWorkingDir: A path to the working directory of the application
-* @return: An integer value indication a success or an error in the function
-*/
-_Success_(return == 0)
-int getWorkingDir(_Out_ char** pWorkingDir)
-{
-    int ret = 0;
-    char cwd[1024] = "";
-    *pWorkingDir = NULL;
-
-    if (_getcwd(cwd, sizeof(cwd)) != 0) {
-        printf("Current working directory: **%s**\n", cwd);
-    }
-    else {
-        perror("_getcwd() error");
-        ret = ERROR_CODE;
-        goto error;
-    }
-
-    size_t count = strlen(cwd);
-
-    if (NULL == (*pWorkingDir = (char*)malloc(sizeof(char) * count + 1)))
-    {
-        ret = ERROR_CODE;
-        goto error;
-    }
-
-#pragma warning( push )
-#pragma warning( disable : 6387 )
-
-    strcpy_s(*pWorkingDir, (count + 1), cwd);
-    return ret;
-
-#pragma warning( pop )
-
-error:
-    free(*pWorkingDir);
-    return ret;
-}
-
-/**
-* This function returns a connection string.
-* 
-* @param workingDirectory: A path to the working directory of the application
-* @param fileName: A name of the file that must contain the connection string
-* @param connectionString: A connection string
-* @return: An integer value indication a success or an error in the function
-*/
-int getConnectionString(
-    _Inout_ char** workingDirectory, 
-    _In_ char* fileName, 
-    _Out_ char** connectionString)
-{
-    int ret = 0;
-
-    *connectionString = NULL;
-
-    size_t lenPath = strlen(*workingDirectory) + 2;
-    size_t lenFileName = strlen(fileName);
-
-    size_t lenFullPath = lenPath + lenFileName;
-
-    char* temp = NULL;
-
-    if (!!*workingDirectory)
-    {
-        if (NULL == (temp = (char*)realloc(*workingDirectory, lenPath)))
-        {
-            ret = ERROR_CODE;
-            goto error;
-        }
-        *workingDirectory = temp;
-        temp = NULL;
-
-        size_t s = strlen(*workingDirectory);
-
-        strcat_s(*workingDirectory, s + 2, "\\");
-
-        if (NULL == (temp = (char*)realloc(*workingDirectory, lenFullPath + 1)))
-        {
-            ret = ERROR_CODE;
-            goto error;
-        }
-
-        *workingDirectory = temp;
-        temp = NULL;
-
-        s = strlen(*workingDirectory);
-
-        size_t ss = strlen(fileName);
-
-        strcat_s(*workingDirectory, s + ss + 1, fileName);
-    }
-
-    readFile(workingDirectory, connectionString);
-
-    return ret;
-
-error:
-    free(*workingDirectory);
-    *workingDirectory = NULL;
-    return ret;
-}
 
 /**
 * This function reads a content of a file in the file system.
@@ -129,7 +23,8 @@ int readFile(
 
     *connectionString = NULL;
 
-    errno_t err = fopen_s(&file, *workingDirectory, L"r, ccs=UTF-8");
+    const char tbl[13] = "r";// , ccs = UTF - 8";
+    errno_t err = fopen_s(&file, *workingDirectory, &tbl);
     if (err != 0) {
         printf("Cannot open file.\n");
         return -1;
@@ -243,7 +138,7 @@ SQLCHAR result[SQL_RESULT_LEN];
 SQLCHAR retcode[SQL_RETURN_CODE_LEN];
 
 /**
-* This function open the connection to a database using an ODBC driver.
+* This function opens the connection to a database using an ODBC driver.
 * 
 * @param fileName: A name of the file that must contain the connection string
 * @return: An integer value indication a success or an error in the function.
@@ -252,7 +147,7 @@ SQLCHAR retcode[SQL_RETURN_CODE_LEN];
 int dbOpen(
     _In_ char* fileName) 
 {
-    int err = 0;
+    int err = ERROR_INITIAL;
 
     char* workingDirectory = NULL;
     char* connectionStringW = NULL;
@@ -303,12 +198,13 @@ int dbOpen(
             fprintf(stderr, "Error connecting to SQL Server\n");
             SQLFreeHandle(SQL_HANDLE_DBC, hdbc);
             SQLFreeHandle(SQL_HANDLE_ENV, henv);
-            ret = ERROR_CODE;
+            ret = ERROR_DBOPEN_FAILED;
             goto error;
         }
     }
     else
     {
+        ret = ERROR_CONNECTION_STRING_UNAVAILABLE;
         printf("ERROR: The connection string is unavaible.");
     }
 
@@ -335,18 +231,50 @@ void dbClose()
 char* getInvoicesAsjson_data(_In_ int customer_id) 
 {
     // Allocate memory for JSON data
-    json_data = malloc(100);  // Example: allocating 100 bytes
+    int sizeofString = 0;
+    json_data = (char*) malloc(sizeofString);  // Example: allocating 100 bytes
     if (json_data == NULL) {
         perror("Error allocating memory for JSON data");
         exit(EXIT_FAILURE);
     }
+    json_data[0] = '\0';
+
+    char startMarkOfJsonData[2] = "{";
+    char endMarkOfJsonData[2] = "}";
+
+    int success = concatToJsonData(json_data, startMarkOfJsonData);
+
+    queryInvoicesByCustomer(customer_id, NULL);
+
+    //char tbl[1024] = "{\"key\": \"value\", \"key\": \"value\", \"key\": \"valueHömp\"}";
+
+    size_t max = 1024;
+
+    //size_t destLen = strnlen_s(tbl, max);
+    //int success = strcpy_safe(tbl);
+
+    //getInvoiceData(customer_id, 73, tbl);
+
 
     // Populate the allocated memory with JSON data
-    strcpy(json_data, "{\"key\": \"value\"}");  // Example: JSON data
+    //char* temp = (char*) realloc(json_data, destLen + 1);
+    //if (temp)
+    //{
+    //    json_data = temp;
+    //    strcpy(json_data, tbl/*"{\"key\": \"value\"}"*/);  // Example: JSON data
+    //    json_data[destLen] = '\0';
+    //}
+
+    success = concatToJsonData(json_data, endMarkOfJsonData);
+    // size_t jsonLen = strnlen_s(json_data, max);
+    // json_data[jsonLen] = '\0';
 
     return json_data;
 }
 
+/**
+* This function ...
+*/
 int free_json_data() {
     int done = 744;
     free(json_data);
@@ -358,63 +286,112 @@ int free_json_data() {
 *
 * @param customer_id: ...
 */
-void queryInvoicesByCustomer(_In_ int customer_id)
+int getInvoiceData(_In_ int customer_id, _In_ int invoice_id, _In_ char* bank_reference)
 {
-        SQLHSTMT hstmt;
-        SQLRETURN retcode;
+    char key1[15] = "\"invoice_id\": ";
+    key1[14] = '\0';
+    char invoice_id_value_as_str[20];
 
-        // Allocate statement handle
-        retcode = SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
+    int success = concatToJsonData(&json_data, key1);
 
-        // Prepare stored procedure call
-        char call[256];
-        sprintf(call, "{call GetCustomerInvoices(?)}");
+    // Convert integer to string
+    snprintf(invoice_id_value_as_str, sizeof(invoice_id_value_as_str), "%d", invoice_id);
 
-        // Bind the parameter
-        SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER, 0, 0, &customer_id, 0, NULL);
+    success = concatToJsonData(&json_data, invoice_id_value_as_str);
 
-        // Execute stored procedure
-        retcode = SQLExecDirect(hstmt, (SQLCHAR*)call, SQL_NTS);
 
-        // Process the rows and print to screen
-        if (retcode == SQL_SUCCESS || retcode == SQL_SUCCESS_WITH_INFO) {
-            SQLINTEGER invoice_id;
-            SQLINTEGER customer_id_out;
-            SQL_TIMESTAMP_STRUCT ts;
+    char key2[22] = ", \"bank_reference\": ";
+    success = concatToJsonData(&json_data, key2);
 
-            SQLCHAR invoice_bankreference[20];
+    char quote[2] = "\"";
+    success = concatToJsonData(&json_data, quote);
+    success = concatToJsonData(&json_data, bank_reference);
+    success = concatToJsonData(&json_data, quote);
 
-            do {
-                SQLCHAR columnName[64];
-                SQLSMALLINT columnNameLength;
+    return success;
+}
 
-                SQLRETURN ret = SQLDescribeCol(hstmt, 1, columnName, sizeof(columnName), &columnNameLength, NULL, NULL, NULL, NULL);
+/**
+* This function ...
+*
+* @param customer_id: ...
+*/
+void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString)
+{
+    // Allocate memory for JSON data
+    int sizeofString = 0;
+    json_data = (char*)malloc(sizeofString);  // Example: allocating 100 bytes
+    if (json_data == NULL) {
+        perror("Error allocating memory for JSON data");
+        exit(EXIT_FAILURE);
+    }
+    json_data[0] = '\0';
+
+    char startMarkOfJsonData[2] = "{";
+    char endMarkOfJsonData[2] = "}";
+
+    int success = concatToJsonData(&json_data, startMarkOfJsonData);
+
+    SQLHSTMT hstmt;
+    SQLRETURN retcode;
+
+    // Allocate statement handle
+    retcode = SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
+
+    // Prepare stored procedure call
+    char call[256];
+    sprintf(call, "{call GetCustomerInvoices(?)}");
+
+    // Bind the parameter
+    SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER, 0, 0, &customer_id, 0, NULL);
+
+    // Execute stored procedure
+    retcode = SQLExecDirect(hstmt, (SQLCHAR*)call, SQL_NTS);
+
+    // Process the rows and print to screen
+    if (retcode == SQL_SUCCESS || retcode == SQL_SUCCESS_WITH_INFO) {
+        SQLINTEGER invoice_id;
+        SQL_TIMESTAMP_STRUCT ts;
+
+        SQLCHAR invoice_bankreference[20];
+
+        do {
+            SQLCHAR columnName[64];
+            SQLSMALLINT columnNameLength;
+
+            SQLRETURN ret = SQLDescribeCol(hstmt, 1, columnName, sizeof(columnName), &columnNameLength, NULL, NULL, NULL, NULL);
  
-                if (strcmp((char*)columnName, "invoice_id") == 0) {
-                    // Process the invoice data
-                    SQLINTEGER invoiceId;
-                    SQLCHAR bankReference[64];
-                    while (SQLFetch(hstmt) == SQL_SUCCESS) {
-                        SQLGetData(hstmt, 1, SQL_C_SLONG, &invoiceId, 0, NULL);
-                        SQLGetData(hstmt, 4, SQL_C_CHAR, bankReference, sizeof(bankReference), NULL);
-                        printf("Invoice ID: %d, Bank Reference: %s\n", invoiceId, bankReference);
-                    }
+            if (strcmp((char*)columnName, "invoice_id") == 0) {
+                // Process the invoice data
+                SQLINTEGER invoiceId;
+                SQLCHAR bankReference[64];
+                while (SQLFetch(hstmt) == SQL_SUCCESS) {
+                    SQLGetData(hstmt, 1, SQL_C_SLONG, &invoiceId, 0, NULL);
+                    SQLGetData(hstmt, 4, SQL_C_CHAR, bankReference, sizeof(bankReference), NULL);
+                    printf("Invoice ID: %d, Bank Reference: %s\n", invoiceId, bankReference);
+                    if(invoiceId == 6)
+                        getInvoiceData(customer_id, invoiceId, bankReference);
                 }
-                else if (strcmp((char*)columnName, "invoice_line_id") == 0) {
-                    // Process the invoice line data
-                    SQLINTEGER lineId;
-                    SQLCHAR productName[64];
-                    while (SQLFetch(hstmt) == SQL_SUCCESS) {
-                        SQLGetData(hstmt, 1, SQL_C_SLONG, &lineId, 0, NULL);
-                        SQLGetData(hstmt, 3, SQL_C_CHAR, productName, sizeof(productName), NULL);
-                        printf("  Line ID: %d, Product Name: %s\n", lineId, productName);
-                    }
+            }
+            else if (strcmp((char*)columnName, "invoice_line_id") == 0) {
+                // Process the invoice line data
+                SQLINTEGER lineId;
+                SQLCHAR productName[64];
+                while (SQLFetch(hstmt) == SQL_SUCCESS) {
+                    SQLGetData(hstmt, 1, SQL_C_SLONG, &lineId, 0, NULL);
+                    SQLGetData(hstmt, 3, SQL_C_CHAR, productName, sizeof(productName), NULL);
+                    printf("  Line ID: %d, Product Name: %s\n", lineId, productName);
                 }
-            } while (SQLMoreResults(hstmt) == SQL_SUCCESS);
-        }
+            }
+        } while (SQLMoreResults(hstmt) == SQL_SUCCESS);
+    }
 
-        // Free the statement handle
-        SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
+    success = concatToJsonData(&json_data, endMarkOfJsonData);
+
+    *jsonString = json_data;
+
+    // Free the statement handle
+    SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
 }
 
 /**
@@ -498,6 +475,8 @@ void addInvoice(
     _In_ double                 invoice_total,
     _Out_ int*                  invoice_idOut)
 {
+    *invoice_idOut = 0;
+
     SQLHSTMT hstmt;
     SQLINTEGER id_invoice;
 
@@ -572,6 +551,8 @@ void addCustomer(
     _In_ char* customer_city,
     _Out_ int* customer_id)
 {
+    *customer_id = 0;
+
     char query[1024];
     size_t bufferCount = 1024;     
     sprintf_s(query, bufferCount,

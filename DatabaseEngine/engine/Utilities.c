@@ -108,7 +108,7 @@ error:
     return ret;
 }
 
-int concatToJsonData(char** dest, const char* source)
+int concatToJsonData(_Inout_ char** dest, _In_ const char* source)
 {
     size_t max = 1024;
 
@@ -148,4 +148,153 @@ int concatToJsonData(char** dest, const char* source)
         printf("%s", *dest);
     }
     return 0;
+}
+
+/**
+* This function ...
+*
+* @param customer_id: ...
+*/
+int getInvoiceData(_In_ int customer_id, _In_ int invoice_id, _In_ char* bank_reference, _Inout_ char** dest)
+{
+    char key1[15] = "\"invoice_id\": ";
+    key1[14] = '\0';
+    char invoice_id_value_as_str[20];
+
+    int success = concatToJsonData(dest, key1);
+
+    // Convert integer to string
+    snprintf(invoice_id_value_as_str, sizeof(invoice_id_value_as_str), "%d", invoice_id);
+
+    success = concatToJsonData(dest, invoice_id_value_as_str);
+
+
+    char key2[22] = ", \"bank_reference\": ";
+    success = concatToJsonData(dest, key2);
+
+    char quote[2] = "\"";
+    success = concatToJsonData(dest, quote);
+    success = concatToJsonData(dest, bank_reference);
+    success = concatToJsonData(dest, quote);
+
+    return success;
+}
+
+/**
+* This function reads a content of a file in the file system.
+*
+* @param workingDirectory: A path to the working directory of the application
+* @param connectionString: A connection string
+* @return: An integer value indication a success or an error in the function
+*/
+int readFile(
+    _In_ char** workingDirectory,
+    _Out_ char** connectionString)
+{
+    int ret = 0;
+    FILE* file = NULL;
+
+    *connectionString = NULL;
+
+    const char tbl[13] = "r";// , ccs = UTF - 8";
+    errno_t err = fopen_s(&file, *workingDirectory, &tbl);
+    if (err != 0) {
+        printf("Cannot open file.\n");
+        return -1;
+    }
+
+    fseek(file, 0, SEEK_END);
+    long length = ftell(file);
+    fseek(file, 0, SEEK_SET);
+
+    int* integers = (int*)malloc((length) * sizeof(int));
+    if (integers) {
+        int b = -1;
+        int i = 0;
+        while ((b = fgetc(file)) != EOF) {
+            // printf("%d ", b);
+            integers[i] = b;
+            i++;
+        }
+    }
+
+    unsigned char iso8859_1 = 0;
+
+    unsigned char* chars = (unsigned char*)malloc(sizeof(unsigned char) + 1);
+
+    if (!!chars)
+    {
+#pragma warning( push )
+#pragma warning( disable : 6011 )
+        chars[0] = 'a';
+#pragma warning( pop )
+        chars[1] = '\0';
+    }
+    else
+    {
+        ret = ERROR_REALLOC_FAILED;
+        goto exit;
+    }
+
+    long indexOfTheISO88591Array = 0;
+
+    for (long indexOfCodepointArray = 0; indexOfCodepointArray < length; indexOfCodepointArray++)
+    {
+        unsigned char utf8[] = { 0, 0 };
+#pragma warning( push )
+#pragma warning( disable : 6011 )
+        utf8[0] = integers[indexOfCodepointArray];
+#pragma warning( pop )
+
+        // If the UTF-8 character is in the ASCII range, it's the same in ISO 8859-1
+        if (utf8[0] < 128) {
+            iso8859_1 = utf8[0];
+        }
+        // Otherwise, if it's a 2-byte UTF-8 character, we can find the ISO 8859-1 character by subtracting 194 from the first byte
+        else if (utf8[0] < 224) {
+#pragma warning( push )
+#pragma warning( disable : 6385)
+            utf8[1] = (unsigned char)integers[indexOfCodepointArray + 1];
+#pragma warning( pop )
+            iso8859_1 = (utf8[0] & 0x1F) << 6 | (utf8[1] & 0x3F);
+        }
+
+#pragma warning( push )
+#pragma warning( disable : 28182 )
+        chars[indexOfTheISO88591Array] = (unsigned char)iso8859_1;
+#pragma warning( pop )
+
+        unsigned char* tem = (unsigned char*)realloc(chars, (indexOfTheISO88591Array + 1) * sizeof(unsigned char) + 1);
+
+        if (!tem)
+        {
+            free(chars);
+            ret = ERROR_REALLOC_FAILED;
+            goto exit;
+        }
+
+#pragma warning( push )
+#pragma warning( disable : 28182 )
+        long currentIndex = ((indexOfTheISO88591Array + 1) * sizeof(unsigned char));
+        tem[currentIndex] = '\0';
+#pragma warning( pop )
+        chars = tem;
+        if (utf8[0] >= 128 && utf8[0] < 224)
+        {
+            indexOfCodepointArray++;
+        }
+        indexOfTheISO88591Array++;
+    }
+
+    *connectionString = chars;
+
+    fclose(file);
+    free(integers);
+
+    return 0;
+
+exit:
+    fclose(file);
+    free(integers);
+    return ret;
 }

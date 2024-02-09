@@ -32,9 +32,6 @@ extern "C" {
 		_In_ char*					customer_city,
 		_Out_ int*					customer_id);
 
-	//char DB_ENGINE_LIBRARY_EXPORT* getInvoicesAsjson_data(
-	//	_In_ int                    customer_id);
-
 	int DB_ENGINE_LIBRARY_EXPORT free_json_data();
 
 	void DB_ENGINE_LIBRARY_EXPORT queryInvoicesByCustomer(
@@ -59,14 +56,5 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif
-
-	int readFile(
-		_In_ char**					workingDirectory, 
-		_Out_ char**				connectionString);
-
-	int getInvoiceData(
-		_In_ int					customer_id,
-		_In_ int					invoice_id,
-		_In_ char*					bank_reference);
 
 #endif // DATABASE_ENGINE_H

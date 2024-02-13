@@ -70,9 +70,10 @@ int main(int argc, char *argv[])
         //addInvoiceLine(invoice_id, product3, quantity3, price3);
 
         char* json = NULL;
-        queryInvoicesByCustomer(customer_id, &json);
+        node_t* errs = NULL;
+        queryInvoicesByCustomer(customer_id, &json, &errs);
         int succeeded = free_json_data();
-        //queryInvoicesByCustomer(customer_id);
+        free_sql_error_details();
 
         dbClose();
     }

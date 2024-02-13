@@ -4,7 +4,14 @@ message("Running CMakeLists.txt for databaseengine...")
 # Collect sources into CMake variables. You can use regular expressions, but CMake 
 # recommends explicitly listing each source. We'll do that for the advanced subfolder.
 file(GLOB ENGINE_HEADERS "*.h")
-set(ENGINE_SOURCES "engine/DatabaseEngine.h" "engine/DatabaseEngine.c" "engine/Utilities.h" "engine/Utilities.c")
+set(ENGINE_SOURCES  "engine/DatabaseEngine.h" 
+                    "engine/DatabaseEngine.c" 
+                    "engine/Utilities.h" 
+                    "engine/Utilities.c" 
+                    "engine/SqlErrorUtil.h" 
+                    "engine/SqlErrorUtil.c" 
+                    "engine/list.h" 
+                    "engine/list.c")
 
 
 # If we just add those collected sources to the project, the folder structure will be
@@ -33,7 +40,7 @@ add_library(engine SHARED ${ENGINE_HEADERS} ${ENGINE_SOURCES})
 # (This doesn't seem to do anything in Eclipse.)
 set_property(TARGET engine PROPERTY FOLDER "libraries")
 
-if (MSVC AND WIN32 AND NOT MSVC_VERSION VERSION_LESS 142)
+# if (MSVC AND WIN32 AND NOT MSVC_VERSION VERSION_LESS 142)
 
     # option 1: put the following command before the creation of the first
     #           compiled target you want to apply the option to;
@@ -42,10 +49,10 @@ if (MSVC AND WIN32 AND NOT MSVC_VERSION VERSION_LESS 142)
     #add_compile_option($<$<CONFIG:Debug>:/ZI>)
 
     # option 2: apply the option on a per-target basis
-    target_link_options(engine PRIVATE "/INCREMENTAL")
-    target_compile_options(engine PRIVATE "/ZI")
+    # target_link_options(engine PRIVATE "/INCREMENTAL")
+    # target_compile_options(engine PRIVATE "/ZI")
 
-endif()
+# endif()
 
 # Find ODBC library
 find_package(ODBC REQUIRED)

@@ -2,6 +2,7 @@
 #define DATABASE_ENGINE_H
 
 #include "DBEngineLibraryExports.h"
+#include "SqlErrorUtil.h"
 
 #include <Windows.h>
 #include <sql.h>
@@ -11,6 +12,8 @@
 #define ERROR_CODE                          -1
 #define ERROR_CONNECTION_STRING_UNAVAILABLE -2
 #define ERROR_DBOPEN_FAILED                 -3
+
+node_t* s = NULL;
 
 // Function declaration
 #ifdef __cplusplus
@@ -34,9 +37,12 @@ extern "C" {
 
 	int DB_ENGINE_LIBRARY_EXPORT free_json_data();
 
+	void DB_ENGINE_LIBRARY_EXPORT free_sql_error_details();
+
 	void DB_ENGINE_LIBRARY_EXPORT queryInvoicesByCustomer(
 		_In_ int					customer_id, 
-		_Out_ char**				jsonString);
+		_Out_ char**				jsonString,
+		_Out_ node_t**				errorList);
 
 	void DB_ENGINE_LIBRARY_EXPORT addInvoiceLine(
 		_In_ int					invoice_id,

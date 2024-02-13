@@ -108,6 +108,10 @@ error:
     return ret;
 }
 
+/**
+* This function concats a string to another string. The memory is reallocated according to a additional
+* space the 
+*/
 int concatToJsonData(_Inout_ char** dest, _In_ const char* source)
 {
     size_t max = 1024;

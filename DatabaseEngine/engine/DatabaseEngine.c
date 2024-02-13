@@ -107,53 +107,6 @@ void dbClose()
 }
 
 /**
-* 
-*/
-char* getInvoicesAsjson_data(_In_ int customer_id) 
-{
-    // Allocate memory for JSON data
-    int sizeofString = 0;
-    json_data = (char*) malloc(sizeofString);  // Example: allocating 100 bytes
-    if (json_data == NULL) {
-        perror("Error allocating memory for JSON data");
-        exit(EXIT_FAILURE);
-    }
-    json_data[0] = '\0';
-
-    char startMarkOfJsonData[2] = "{";
-    char endMarkOfJsonData[2] = "}";
-
-    int success = concatToJsonData(json_data, startMarkOfJsonData);
-
-    queryInvoicesByCustomer(customer_id, NULL);
-
-    //char tbl[1024] = "{\"key\": \"value\", \"key\": \"value\", \"key\": \"valueHömp\"}";
-
-    size_t max = 1024;
-
-    //size_t destLen = strnlen_s(tbl, max);
-    //int success = strcpy_safe(tbl);
-
-    //getInvoiceData(customer_id, 73, tbl);
-
-
-    // Populate the allocated memory with JSON data
-    //char* temp = (char*) realloc(json_data, destLen + 1);
-    //if (temp)
-    //{
-    //    json_data = temp;
-    //    strcpy(json_data, tbl/*"{\"key\": \"value\"}"*/);  // Example: JSON data
-    //    json_data[destLen] = '\0';
-    //}
-
-    success = concatToJsonData(json_data, endMarkOfJsonData);
-    // size_t jsonLen = strnlen_s(json_data, max);
-    // json_data[jsonLen] = '\0';
-
-    return json_data;
-}
-
-/**
 * This function ...
 */
 int free_json_data() {
@@ -162,12 +115,17 @@ int free_json_data() {
     return done;
 }
 
+void free_sql_error_details()
+{
+    DeleteList(&s);
+}
+
 /**
 * This function ...
 *
 * @param customer_id: ...
 */
-void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString)
+void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out_ node_t** errorList)
 {
     // Allocate memory for JSON data
     int sizeofString = 0;
@@ -198,6 +156,10 @@ void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString)
 
     // Execute stored procedure
     retcode = SQLExecDirect(hstmt, (SQLCHAR*)call, SQL_NTS);
+
+    SQLErrorUtil(retcode, hstmt, &s);
+
+    *errorList = s;
 
     // Process the rows and print to screen
     if (retcode == SQL_SUCCESS || retcode == SQL_SUCCESS_WITH_INFO) {

@@ -200,8 +200,8 @@ int readFile(
 
     *connectionString = NULL;
 
-    const char tbl[13] = "r";// , ccs = UTF - 8";
-    errno_t err = fopen_s(&file, *workingDirectory, &tbl);
+    const char* tbl = "r";// , ccs = UTF - 8";
+    errno_t err = fopen_s(&file, *workingDirectory, tbl);
     if (err != 0) {
         printf("Cannot open file.\n");
         return -1;

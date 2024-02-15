@@ -1,7 +1,4 @@
 #include "BankReferenceCalculator.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 #define NUM_DIGITS 10
 
@@ -9,7 +6,7 @@
 #define false 0
 #define bool int
 
-void calcNewReference(const int nNumber, int* referenceOut)
+void calcNewReference(_In_ const int nNumber, _Out_ int* referenceOut)
 {
     int resultArray[NUM_DIGITS]; // Assuming a maximum of 10 digits
     *referenceOut = 0;

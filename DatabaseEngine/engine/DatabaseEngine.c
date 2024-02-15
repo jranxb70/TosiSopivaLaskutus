@@ -127,6 +127,12 @@ void free_sql_error_details()
 */
 void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out_ node_t** errorList)
 {
+    char fileName[21] = "connectionstring.txt";
+    int databaseOpen = dbOpen(fileName);
+
+    if (!databaseOpen)
+        return;
+
     // Allocate memory for JSON data
     int sizeofString = 0;
     json_data = (char*)malloc(sizeofString);  // Example: allocating 100 bytes
@@ -205,6 +211,8 @@ void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out
 
     // Free the statement handle
     SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
+
+    dbClose();
 }
 
 /**
@@ -221,6 +229,13 @@ void addInvoiceLine(
     _In_ int invoiceline_quantity,
     _In_ double invoiceline_price)
 {
+    char fileName[21] = "connectionstring.txt";
+    int databaseOpen = dbOpen(fileName);
+
+    if (!databaseOpen)
+        return;
+
+
     SQLHSTMT hstmt;
     SQLINTEGER id_invoice;
 
@@ -266,6 +281,7 @@ void addInvoiceLine(
         SQLGetDiagRec(SQL_HANDLE_DBC, hdbc, 1, NULL, NULL, retcode, SQL_RETURN_CODE_LEN, NULL);
         printf("Error connecting to database: %s\n", retcode);
     }
+    dbClose();
 }
 
 /**
@@ -289,6 +305,12 @@ void addInvoice(
     _Out_ int*                  invoice_idOut)
 {
     *invoice_idOut = 0;
+
+    char fileName[21] = "connectionstring.txt";
+    int databaseOpen = dbOpen(fileName);
+
+    if (!databaseOpen)
+        return;
 
     SQLHSTMT hstmt;
     SQLINTEGER id_invoice;
@@ -344,6 +366,7 @@ void addInvoice(
         SQLGetDiagRec(SQL_HANDLE_DBC, hdbc, 1, NULL, NULL, retcode, SQL_RETURN_CODE_LEN, NULL);
         printf("Error connecting to database: %s\n", retcode);
     }
+    dbClose();
 }
 
 /**
@@ -365,6 +388,12 @@ void addCustomer(
     _Out_ int* customer_id)
 {
     *customer_id = 0;
+
+    char fileName[21] = "connectionstring.txt";
+    int databaseOpen = dbOpen(fileName);
+
+    if (!databaseOpen)
+        return;
 
     char query[1024];
     size_t bufferCount = 1024;     
@@ -409,6 +438,7 @@ void addCustomer(
         SQLGetDiagRec(SQL_HANDLE_DBC, hdbc, 1, NULL, NULL, retcode, SQL_RETURN_CODE_LEN, NULL);
         printf("Error connecting to database: %s\n", retcode);
     }
+    dbClose();
 }
 
 /**
@@ -417,6 +447,12 @@ void addCustomer(
 */
 void createTables()
 {
+    char fileName[21] = "connectionstring.txt";
+    int databaseOpen = dbOpen(fileName);
+
+    if (!databaseOpen)
+        return;
+
     // Assume you have a stored procedure named "CreateTablesIfNotExist"
     SQLCHAR* storedProcedureCall = (SQLCHAR*) "EXEC [dbo].[CreateTablesIfNotExist]";
     
@@ -470,4 +506,5 @@ void createTables()
             }
         }
     }
+    dbClose();
 }

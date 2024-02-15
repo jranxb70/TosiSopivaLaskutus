@@ -20,11 +20,6 @@ node_t* s = NULL;
 extern "C" {
 #endif
 
-	int DB_ENGINE_LIBRARY_EXPORT dbOpen(
-		_In_ char*					fileName);
-
-	void DB_ENGINE_LIBRARY_EXPORT dbClose();
-
 	void DB_ENGINE_LIBRARY_EXPORT createTables();
 
 	void DB_ENGINE_LIBRARY_EXPORT addCustomer(
@@ -62,5 +57,10 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif
+
+int dbOpen(
+	_In_ char* fileName);
+
+void  dbClose();
 
 #endif // DATABASE_ENGINE_H

@@ -45,10 +45,6 @@ int main(int argc, char *argv[])
 
     int ret = dbOpen(argv[1]);
 
-    if (ret > 0)
-    {
-        // addCustomer(firstName, lastName, address, zip, city, &customer_id);
-
         bankreference = bankreference + customer_id;
         int bankreferenceOut = 0;
         int* ref = NULL;
@@ -75,8 +71,7 @@ int main(int argc, char *argv[])
         int succeeded = free_json_data();
         free_sql_error_details();
 
-        dbClose();
-    }
+
 
     return 0;
 }

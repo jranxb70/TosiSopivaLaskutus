@@ -154,6 +154,93 @@ int concatToJsonData(_Inout_ char** dest, _In_ const char* source)
     return 0;
 }
 
+int parseCustomerDataX(
+                    _In_ int customer_id, 
+                    _In_ char* first_name, 
+                    _In_ char* last_name, 
+                    _In_ char* address, 
+                    _In_ char* zip, 
+                    _In_ char* city, 
+                    _Inout_ char** dest)
+{
+    char key1[16] = "\"customer_id\": ";
+    key1[15] = '\0';
+    char customer_id_value_as_str[20];
+
+    int success = concatToJsonData(dest, key1);
+
+    // Convert integer to string
+    snprintf(customer_id_value_as_str, sizeof(customer_id_value_as_str), "%d", customer_id);
+
+    success = concatToJsonData(dest, customer_id_value_as_str);
+
+
+}
+
+int parseCustomerData(
+    _In_ int customer_id,
+    _In_ char* first_name,
+    _In_ char* last_name,
+    _In_ char* address,
+    _In_ char* zip,
+    _In_ char* city,
+    _Inout_ char** dest)
+{
+    char key1[16] = "\"customer_id\": ";
+    key1[15] = '\0';
+    char customer_id_value_as_str[20];
+
+    int success = concatToJsonData(dest, key1);
+
+    // Convert integer to string
+    snprintf(customer_id_value_as_str, sizeof(customer_id_value_as_str), "%d", customer_id);
+
+    success = concatToJsonData(dest, customer_id_value_as_str);
+
+    char key2[17] = ", \"first_name\": ";
+    key2[16] = '\0';
+    success = concatToJsonData(dest, key2);
+    success = concatToJsonData(dest, "\"");
+    success = concatToJsonData(dest, first_name);
+    success = concatToJsonData(dest, "\"");
+
+    char key3[16] = ", \"last_name\": ";
+    key3[15] = '\0';
+    success = concatToJsonData(dest, key3);
+    success = concatToJsonData(dest, "\"");
+    success = concatToJsonData(dest, last_name);
+    success = concatToJsonData(dest, "\"");
+
+    char key4[14] = ", \"address\": ";
+    key4[13] = '\0';
+    success = concatToJsonData(dest, key4);
+    success = concatToJsonData(dest, "\"");
+    success = concatToJsonData(dest, address);
+    success = concatToJsonData(dest, "\"");
+
+    char key5[10] = ", \"zip\": ";
+    key5[9] = '\0';
+    success = concatToJsonData(dest, key5);
+    success = concatToJsonData(dest, "\"");
+    success = concatToJsonData(dest, zip);
+    success = concatToJsonData(dest, "\"");
+
+    char key6[11] = ", \"city\": ";
+    key6[10] = '\0';
+    success = concatToJsonData(dest, key6);
+    success = concatToJsonData(dest, "\"");
+    success = concatToJsonData(dest, city);
+    success = concatToJsonData(dest, "\"");
+
+    char key7[15] = ", \"invoices\": ";
+    key7[14] = '\0';
+    success = concatToJsonData(dest, key7);
+    success = concatToJsonData(dest, "[]");
+
+    return success;
+}
+
+
 /**
 * This function ...
 *
@@ -185,7 +272,7 @@ int getInvoiceData(_In_ int customer_id, _In_ int invoice_id, _In_ char* bank_re
 }
 
 /**
-* This function reads a content of a file in the file system.
+* This function reads the content of a file in the file system.
 *
 * @param workingDirectory: A path to the working directory of the application
 * @param connectionString: A connection string
@@ -301,4 +388,41 @@ exit:
     fclose(file);
     free(integers);
     return ret;
+}
+
+
+void insert_string_safely(char** dest, const char* src, int pos) 
+{
+    if (dest == NULL || *dest == NULL || src == NULL) {
+        return;  // Return if any of the input pointers are NULL
+    }
+
+    size_t dest_len = strlen(*dest);
+    size_t src_len = strlen(src);
+    char* new_dest = (char*)realloc(*dest, dest_len + src_len + 1);
+    if (new_dest == NULL) {
+        return;  // Return if memory allocation failed
+    }
+
+    // Copy the first part of dest into new_dest
+    strncpy_s(new_dest, dest_len + src_len + 1, *dest, pos);
+
+    // Append src to new_dest
+    strcat_s(new_dest, dest_len + src_len + 1, src);
+
+    // Append the rest of dest to new_dest
+    strcat_s(new_dest, dest_len + src_len + 1, *dest + pos);
+
+    *dest = new_dest;  // Update the dest pointer to point to the new string
+}
+
+int find_index_of_invoices_bracket(const char* json) {
+    const char* invoices_key = "\"invoices\": [";
+    char* invoices_location = strstr(json, invoices_key);
+    if (invoices_location != NULL) {
+        return invoices_location - json + strlen(invoices_key) - 1;
+    }
+    else {
+        return -1;  // Return -1 if "invoices": [ is not found in the JSON string
+    }
 }

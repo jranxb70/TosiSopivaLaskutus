@@ -179,8 +179,44 @@ void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out
             SQLSMALLINT columnNameLength;
 
             SQLRETURN ret = SQLDescribeCol(hstmt, 1, columnName, sizeof(columnName), &columnNameLength, NULL, NULL, NULL, NULL);
- 
-            if (strcmp((char*)columnName, "invoice_id") == 0) {
+
+            int invoice_index = 0;
+
+            if (strcmp((char*)columnName, "customer_id") == 0) {
+                // Process the invoice data
+                SQLINTEGER  invoiceId;
+                SQLCHAR     firstName[64];
+                SQLCHAR     lastName[64];
+                SQLCHAR     address[64];
+                SQLCHAR     zip[64];
+                SQLCHAR     city[64];
+
+                while (SQLFetch(hstmt) == SQL_SUCCESS) {
+                    SQLGetData(hstmt, 1, SQL_C_SLONG,   &invoiceId,     0,                      NULL);
+                    SQLGetData(hstmt, 2, SQL_C_CHAR,    firstName,      sizeof(firstName),      NULL);
+                    SQLGetData(hstmt, 3, SQL_C_CHAR,    lastName,       sizeof(lastName),       NULL);
+                    SQLGetData(hstmt, 4, SQL_C_CHAR,    address,        sizeof(address),        NULL);
+                    SQLGetData(hstmt, 5, SQL_C_CHAR,    zip,            sizeof(zip),            NULL);
+                    SQLGetData(hstmt, 6, SQL_C_CHAR,    city,           sizeof(city),           NULL);
+
+                    printf("Invoice ID: %d, Bank Reference: %s\n", 
+                            invoiceId, 
+                            firstName, 
+                            lastName, 
+                            address,
+                            zip,
+                            city);
+
+                    parseCustomerData(invoiceId,
+                        firstName,
+                        lastName,
+                        address,
+                        zip,
+                        city,
+                        &json_data);
+                }
+            }
+            else if (strcmp((char*)columnName, "invoice_id") == 0) {
                 // Process the invoice data
                 SQLINTEGER invoiceId;
                 SQLCHAR bankReference[64];
@@ -188,8 +224,30 @@ void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out
                     SQLGetData(hstmt, 1, SQL_C_SLONG, &invoiceId, 0, NULL);
                     SQLGetData(hstmt, 4, SQL_C_CHAR, bankReference, sizeof(bankReference), NULL);
                     printf("Invoice ID: %d, Bank Reference: %s\n", invoiceId, bankReference);
-                    if(invoiceId == 6)
-                        getInvoiceData(customer_id, invoiceId, bankReference, &json_data);
+                    
+                    int index = -1;
+                    if (invoice_index == 0)
+                    {
+                        index = find_index_of_invoices_bracket(json_data);
+                    }
+
+                    // Allocate memory for JSON data
+                    int sizeofString = 0;
+                    char* temp_data = (char*)malloc(sizeofString);  // Example: allocating 100 bytes
+                    if (temp_data == NULL) {
+                        perror("Error allocating memory for JSON data");
+                        exit(EXIT_FAILURE);
+                    }
+                    temp_data[0] = '\0';
+
+                    success = concatToJsonData(&temp_data, startMarkOfJsonData);
+
+                    getInvoiceData(customer_id, invoiceId, bankReference, &temp_data);
+
+                    success = concatToJsonData(&temp_data, endMarkOfJsonData);
+
+                    insert_string_safely(&json_data, temp_data, index + 1);
+                    free(temp_data);
                 }
             }
             else if (strcmp((char*)columnName, "invoice_line_id") == 0) {
@@ -214,6 +272,28 @@ void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out
 
     dbClose();
 }
+
+//{
+
+//        "customerId": 1,
+//        "first_name": "Kostos",
+// //     "last_name":  "Kouruhousu",
+//        "invoices" : [
+        //        {
+        //            "invoiceId": 100,
+        //                "amount" : 200.00,
+        //                "date" : "2024-02-19",
+        //                "lines" : [
+        //            {
+        //                "lineId": 1,
+        //                    "description" : "Product 1",
+        //                    "quantity" : 2,
+        //                    "price" : 100.00
+        //            }
+//                ]
+//        },
+
+//}
 
 /**
 * This function ...
@@ -439,6 +519,29 @@ void addCustomer(
         printf("Error connecting to database: %s\n", retcode);
     }
     dbClose();
+}
+
+/**
+*
+*/
+void newInvoice()
+{
+    int customer_id = 0;
+    SQL_TIMESTAMP_STRUCT invoice_date;
+    char* invoice_bankreference = "";
+    double invoice_subtotal;
+    double invoice_tax = 0.00;
+    double invoice_total = 0.00;
+    int* invoice_idOut = NULL;
+
+    addInvoice(
+        _In_(int)                   customer_id,
+        _In_                        invoice_date,
+        _In_(char*)                 invoice_bankreference,
+        _In_(double)                invoice_subtotal,
+        _In_(double)                invoice_tax,
+        _In_(double)                invoice_total,
+        _Out_(int*)                 invoice_idOut);
 }
 
 /**

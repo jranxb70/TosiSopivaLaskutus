@@ -40,12 +40,10 @@ int parseCustomerData(
 
 void insert_string_safely(char** dest, const char* src, int pos);
 
-int insert_string(
-	_Out_ char**				dest, 
-	_In_  const char*			src, 
-	_In_ int					pos);
-
-int find_index_of_invoices_bracket(
+int find_index_of_invoices_opening_bracket(
 	_In_ const char*			json);
+
+int find_index_of_invoices_closing_bracket(
+	_In_ const char* json);
 
 #endif // UTILITIES_H

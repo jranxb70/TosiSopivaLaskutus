@@ -127,6 +127,8 @@ int concatToJsonData(_Inout_ char** dest, _In_ const char* source)
     {
         printf("Memory reallocation failed\n");
         free(*dest); // Free the original memory
+        *dest = NULL;
+        dest = NULL;
         return -1;
     }
 
@@ -137,6 +139,7 @@ int concatToJsonData(_Inout_ char** dest, _In_ const char* source)
         // Copy the source string to the destination buffer safely
         if (strncpy_s(*dest, newLength, source, _TRUNCATE) != 0) {
             printf("String copy failed\n");
+            free(*dest);
             return -2;
         }
         else
@@ -149,33 +152,32 @@ int concatToJsonData(_Inout_ char** dest, _In_ const char* source)
     {
         strcat_s(*dest, newLength, source);
         (*dest)[destLen + srcLen] = '\0';
-        //printf("%s", *dest);
     }
     return 0;
 }
 
-int parseCustomerDataX(
-                    _In_ int customer_id, 
-                    _In_ char* first_name, 
-                    _In_ char* last_name, 
-                    _In_ char* address, 
-                    _In_ char* zip, 
-                    _In_ char* city, 
-                    _Inout_ char** dest)
-{
-    char key1[16] = "\"customer_id\": ";
-    key1[15] = '\0';
-    char customer_id_value_as_str[20];
-
-    int success = concatToJsonData(dest, key1);
-
-    // Convert integer to string
-    snprintf(customer_id_value_as_str, sizeof(customer_id_value_as_str), "%d", customer_id);
-
-    success = concatToJsonData(dest, customer_id_value_as_str);
-
-
-}
+//int parseCustomerDataX(
+//                    _In_ int customer_id, 
+//                    _In_ char* first_name, 
+//                    _In_ char* last_name, 
+//                    _In_ char* address, 
+//                    _In_ char* zip, 
+//                    _In_ char* city, 
+//                    _Inout_ char** dest)
+//{
+//    char key1[16] = "\"customer_id\": ";
+//    key1[15] = '\0';
+//    char customer_id_value_as_str[20];
+//
+//    int success = concatToJsonData(dest, key1);
+//
+//    // Convert integer to string
+//    snprintf(customer_id_value_as_str, sizeof(customer_id_value_as_str), "%d", customer_id);
+//
+//    success = concatToJsonData(dest, customer_id_value_as_str);
+//
+//
+//}
 
 int parseCustomerData(
     _In_ int customer_id,
@@ -246,7 +248,7 @@ int parseCustomerData(
 *
 * @param customer_id: ...
 */
-int getInvoiceData(_In_ int customer_id, _In_ int invoice_id, _In_ char* bank_reference, _Inout_ char** dest)
+int parseInvoiceData(_In_ int customer_id, _In_ int invoice_id, _In_ char* bank_reference, _Inout_ char** dest)
 {
     char key1[15] = "\"invoice_id\": ";
     key1[14] = '\0';

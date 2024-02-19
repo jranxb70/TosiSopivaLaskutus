@@ -252,9 +252,7 @@ void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out
                     }
                     invoice_index++;
 
-                    //success = concatToJsonData(&temp_data, startMarkOfJsonData);
-
-                    getInvoiceData(customer_id, invoiceId, bankReference, &temp_data);
+                    parseInvoiceData(customer_id, invoiceId, bankReference, &temp_data);
 
                     success = concatToJsonData(&temp_data, endMarkOfJsonData);
 

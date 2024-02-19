@@ -38,12 +38,20 @@ int parseCustomerData(
 	_In_ char*					city,
 	_Inout_ char**				dest);
 
-void insert_string_safely(char** dest, const char* src, int pos);
+int parseInvoiceLineData(
+	_In_ int					invoice_id, 
+	/*_In_ char* bank_reference,*/ 
+	_Inout_ char**				dest);
+
+void insert_string_safely(
+	_Inout_ char**				dest, 
+	_In_ const char*			src, 
+	_In_ int					pos);
 
 int find_index_of_invoices_opening_bracket(
 	_In_ const char*			json);
 
 int find_index_of_invoices_closing_bracket(
-	_In_ const char* json);
+	_In_ const char*			json);
 
 #endif // UTILITIES_H

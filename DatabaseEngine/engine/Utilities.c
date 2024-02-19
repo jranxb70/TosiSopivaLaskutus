@@ -156,29 +156,9 @@ int concatToJsonData(_Inout_ char** dest, _In_ const char* source)
     return 0;
 }
 
-//int parseCustomerDataX(
-//                    _In_ int customer_id, 
-//                    _In_ char* first_name, 
-//                    _In_ char* last_name, 
-//                    _In_ char* address, 
-//                    _In_ char* zip, 
-//                    _In_ char* city, 
-//                    _Inout_ char** dest)
-//{
-//    char key1[16] = "\"customer_id\": ";
-//    key1[15] = '\0';
-//    char customer_id_value_as_str[20];
-//
-//    int success = concatToJsonData(dest, key1);
-//
-//    // Convert integer to string
-//    snprintf(customer_id_value_as_str, sizeof(customer_id_value_as_str), "%d", customer_id);
-//
-//    success = concatToJsonData(dest, customer_id_value_as_str);
-//
-//
-//}
-
+/**
+*
+*/
 int parseCustomerData(
     _In_ int customer_id,
     _In_ char* first_name,
@@ -268,6 +248,36 @@ int parseInvoiceData(_In_ int customer_id, _In_ int invoice_id, _In_ char* bank_
     char quote[2] = "\"";
     success = concatToJsonData(dest, quote);
     success = concatToJsonData(dest, bank_reference);
+    success = concatToJsonData(dest, quote);
+
+    return success;
+}
+
+/**
+* This function ...
+*
+* @param customer_id: ...
+*/
+int parseInvoiceLineData(_In_ int invoice_id, /*_In_ char* bank_reference,*/ _Inout_ char** dest)
+{
+    char key1[15] = "\"invoice_id\": ";
+    key1[14] = '\0';
+    char invoice_id_value_as_str[20];
+
+    int success = concatToJsonData(dest, key1);
+
+    // Convert integer to string
+    snprintf(invoice_id_value_as_str, sizeof(invoice_id_value_as_str), "%d", invoice_id);
+
+    success = concatToJsonData(dest, invoice_id_value_as_str);
+
+
+    char key2[22] = ", \"bank_reference\": ";
+    success = concatToJsonData(dest, key2);
+
+    char quote[2] = "\"";
+    success = concatToJsonData(dest, quote);
+    //success = concatToJsonData(dest, bank_reference);
     success = concatToJsonData(dest, quote);
 
     return success;
@@ -393,7 +403,7 @@ exit:
 }
 
 
-void insert_string_safely(char** dest, const char* src, int pos) 
+void insert_string_safely(_Inout_ char** dest, _In_ const char* src, _In_ int pos) 
 {
     if (dest == NULL || *dest == NULL || src == NULL) {
         return;  // Return if any of the input pointers are NULL
@@ -418,7 +428,7 @@ void insert_string_safely(char** dest, const char* src, int pos)
     *dest = new_dest;  // Update the dest pointer to point to the new string
 }
 
-int find_index_of_invoices_opening_bracket(const char* json) {
+int find_index_of_invoices_opening_bracket(_In_ const char* json) {
     const char* invoices_key = "\"invoices\": [";
     char* invoices_location = strstr(json, invoices_key);
     if (invoices_location != NULL) {
@@ -430,7 +440,7 @@ int find_index_of_invoices_opening_bracket(const char* json) {
 }
 
 
-int find_index_of_invoices_closing_bracket(const char* json) {
+int find_index_of_invoices_closing_bracket(_In_ const char* json) {
     const char* invoices_key = "]";
     char* invoices_location = strstr(json, invoices_key);
     if (invoices_location != NULL) {

@@ -145,6 +145,8 @@ void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out
     char startMarkOfJsonData[2] = "{";
     char endMarkOfJsonData[2] = "}";
 
+    char commaOfJsonData[2] = ",";
+
     int success = concatToJsonData(&json_data, startMarkOfJsonData);
 
     SQLHSTMT hstmt;
@@ -169,10 +171,12 @@ void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out
 
     // Process the rows and print to screen
     if (retcode == SQL_SUCCESS || retcode == SQL_SUCCESS_WITH_INFO) {
-        SQLINTEGER invoice_id;
-        SQL_TIMESTAMP_STRUCT ts;
+        //SQLINTEGER invoice_id;
+        //SQL_TIMESTAMP_STRUCT ts;
 
-        SQLCHAR invoice_bankreference[20];
+        //SQLCHAR invoice_bankreference[20];
+
+        int invoice_index = 0;
 
         do {
             SQLCHAR columnName[64];
@@ -180,11 +184,9 @@ void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out
 
             SQLRETURN ret = SQLDescribeCol(hstmt, 1, columnName, sizeof(columnName), &columnNameLength, NULL, NULL, NULL, NULL);
 
-            int invoice_index = 0;
-
             if (strcmp((char*)columnName, "customer_id") == 0) {
                 // Process the invoice data
-                SQLINTEGER  invoiceId;
+                SQLINTEGER  customerId;
                 SQLCHAR     firstName[64];
                 SQLCHAR     lastName[64];
                 SQLCHAR     address[64];
@@ -192,22 +194,22 @@ void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out
                 SQLCHAR     city[64];
 
                 while (SQLFetch(hstmt) == SQL_SUCCESS) {
-                    SQLGetData(hstmt, 1, SQL_C_SLONG,   &invoiceId,     0,                      NULL);
+                    SQLGetData(hstmt, 1, SQL_C_SLONG,   &customerId,     0,                      NULL);
                     SQLGetData(hstmt, 2, SQL_C_CHAR,    firstName,      sizeof(firstName),      NULL);
                     SQLGetData(hstmt, 3, SQL_C_CHAR,    lastName,       sizeof(lastName),       NULL);
                     SQLGetData(hstmt, 4, SQL_C_CHAR,    address,        sizeof(address),        NULL);
                     SQLGetData(hstmt, 5, SQL_C_CHAR,    zip,            sizeof(zip),            NULL);
                     SQLGetData(hstmt, 6, SQL_C_CHAR,    city,           sizeof(city),           NULL);
 
-                    printf("Invoice ID: %d, Bank Reference: %s\n", 
-                            invoiceId, 
+                    printf("Customer ID: %d, First name: %s, Last name: %s, Address: %s, Address: %s, City: %s\n", 
+                            customerId,
                             firstName, 
                             lastName, 
                             address,
                             zip,
                             city);
 
-                    parseCustomerData(invoiceId,
+                    parseCustomerData(customerId,
                         firstName,
                         lastName,
                         address,
@@ -224,12 +226,6 @@ void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out
                     SQLGetData(hstmt, 1, SQL_C_SLONG, &invoiceId, 0, NULL);
                     SQLGetData(hstmt, 4, SQL_C_CHAR, bankReference, sizeof(bankReference), NULL);
                     printf("Invoice ID: %d, Bank Reference: %s\n", invoiceId, bankReference);
-                    
-                    int index = -1;
-                    if (invoice_index == 0)
-                    {
-                        index = find_index_of_invoices_bracket(json_data);
-                    }
 
                     // Allocate memory for JSON data
                     int sizeofString = 0;
@@ -239,14 +235,30 @@ void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out
                         exit(EXIT_FAILURE);
                     }
                     temp_data[0] = '\0';
+                    
+                    int index = -1;
+                    int place = -1;
+                    if (invoice_index == 0)
+                    {
+                        index = find_index_of_invoices_opening_bracket(json_data);
+                        place = index + 1;
+                        success = concatToJsonData(&temp_data, startMarkOfJsonData);
+                    }
+                    else
+                    {
+                        index = find_index_of_invoices_closing_bracket(json_data);
+                        place = index;
+                        success = concatToJsonData(&temp_data, commaOfJsonData);
+                    }
+                    invoice_index++;
 
-                    success = concatToJsonData(&temp_data, startMarkOfJsonData);
+                    //success = concatToJsonData(&temp_data, startMarkOfJsonData);
 
                     getInvoiceData(customer_id, invoiceId, bankReference, &temp_data);
 
                     success = concatToJsonData(&temp_data, endMarkOfJsonData);
 
-                    insert_string_safely(&json_data, temp_data, index + 1);
+                    insert_string_safely(&json_data, temp_data, place);
                     free(temp_data);
                 }
             }

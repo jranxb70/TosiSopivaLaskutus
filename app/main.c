@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
     int quantity3 = 6;
     double price3 = 2.04;
 
-    addCustomer(firstName, lastName, address, zip, city, &customer_id);
+    //addCustomer(firstName, lastName, address, zip, city, &customer_id);
 
     bankreference = bankreference + customer_id;
     int bankreferenceOut = 0;
@@ -59,7 +59,7 @@ int main(int argc, char *argv[])
     invoice_total = invoice_subtotal * 1.25;
     invoice_tax = invoice_total - invoice_subtotal;
 
-    addInvoice(customer_id, invoice_date, invoice_bankreference, invoice_subtotal, invoice_tax, invoice_total, &invoice_id);
+    //addInvoice(customer_id, invoice_date, invoice_bankreference, invoice_subtotal, invoice_tax, invoice_total, &invoice_id);
 
     addInvoiceLine(invoice_id, product, quantity, price);
     //addInvoiceLine(invoice_id, product2, quantity2, price2);

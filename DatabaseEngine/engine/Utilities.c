@@ -149,7 +149,7 @@ int concatToJsonData(_Inout_ char** dest, _In_ const char* source)
     {
         strcat_s(*dest, newLength, source);
         (*dest)[destLen + srcLen] = '\0';
-        printf("%s", *dest);
+        //printf("%s", *dest);
     }
     return 0;
 }
@@ -416,8 +416,20 @@ void insert_string_safely(char** dest, const char* src, int pos)
     *dest = new_dest;  // Update the dest pointer to point to the new string
 }
 
-int find_index_of_invoices_bracket(const char* json) {
+int find_index_of_invoices_opening_bracket(const char* json) {
     const char* invoices_key = "\"invoices\": [";
+    char* invoices_location = strstr(json, invoices_key);
+    if (invoices_location != NULL) {
+        return invoices_location - json + strlen(invoices_key) - 1;
+    }
+    else {
+        return -1;  // Return -1 if "invoices": [ is not found in the JSON string
+    }
+}
+
+
+int find_index_of_invoices_closing_bracket(const char* json) {
+    const char* invoices_key = "]";
     char* invoices_location = strstr(json, invoices_key);
     if (invoices_location != NULL) {
         return invoices_location - json + strlen(invoices_key) - 1;

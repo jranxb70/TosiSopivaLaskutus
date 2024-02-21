@@ -425,7 +425,7 @@ void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out
 
     printf("%s", archieCruzPlusIida);
 
-    *jsonString = archieCruzPlusIida;
+    *jsonString = json_data;
 
     //cJSON_
 

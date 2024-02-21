@@ -40,7 +40,7 @@ int parseCustomerData(
 
 int parseInvoiceLineData(
 	_In_ int					invoice_id, 
-	/*_In_ char* bank_reference,*/ 
+	_In_ char*					product_reference,
 	_Inout_ char**				dest);
 
 void insert_string_safely(
@@ -51,7 +51,16 @@ void insert_string_safely(
 int find_index_of_invoices_opening_bracket(
 	_In_ const char*			json);
 
-int find_index_of_invoices_closing_bracket(
+int find_index_of_invoices_closing_bracketXXX(
 	_In_ const char*			json);
+
+int find_index_of_invoice_lines_opening_bracket(
+	_In_ const char*			json);
+
+int find_latest_index_of_invoice_lines_opening_bracket(const char* json);
+
+int find_index_of_invoices_closing_bracket(const char* json, int start_index);
+
+int split_string(int index, char** src, char** start, char** end);
 
 #endif // UTILITIES_H

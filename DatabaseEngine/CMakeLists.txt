@@ -11,7 +11,9 @@ set(ENGINE_SOURCES  "engine/DatabaseEngine.h"
                     "engine/SqlErrorUtil.h" 
                     "engine/SqlErrorUtil.c" 
                     "engine/list.h" 
-                    "engine/list.c")
+                    "engine/list.c"
+		    "engine/cJSON.h"
+		    "engine/cJSON.c")
 
 
 # If we just add those collected sources to the project, the folder structure will be

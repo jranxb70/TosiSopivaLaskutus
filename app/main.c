@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
 
     //addInvoice(customer_id, invoice_date, invoice_bankreference, invoice_subtotal, invoice_tax, invoice_total, &invoice_id);
 
-    addInvoiceLine(invoice_id, product, quantity, price);
+    //addInvoiceLine(invoice_id, product, quantity, price);
     //addInvoiceLine(invoice_id, product2, quantity2, price2);
     //addInvoiceLine(invoice_id, product3, quantity3, price3);
 

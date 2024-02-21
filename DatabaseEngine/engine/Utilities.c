@@ -250,6 +250,11 @@ int parseInvoiceData(_In_ int customer_id, _In_ int invoice_id, _In_ char* bank_
     success = concatToJsonData(dest, bank_reference);
     success = concatToJsonData(dest, quote);
 
+    char key7[20] = ", \"invoice_lines\": ";
+    key7[19] = '\0';
+    success = concatToJsonData(dest, key7);
+    success = concatToJsonData(dest, "[]");
+
     return success;
 }
 
@@ -258,26 +263,27 @@ int parseInvoiceData(_In_ int customer_id, _In_ int invoice_id, _In_ char* bank_
 *
 * @param customer_id: ...
 */
-int parseInvoiceLineData(_In_ int invoice_id, /*_In_ char* bank_reference,*/ _Inout_ char** dest)
+int parseInvoiceLineData(_In_ int invoice_id, _In_ char* product_name, _Inout_ char** dest)
 {
-    char key1[15] = "\"invoice_id\": ";
-    key1[14] = '\0';
-    char invoice_id_value_as_str[20];
+    char key1[20] = "\"invoice_line_id\": ";
+    key1[19] = '\0';
+    char invoice_line_id_value_as_str[20];
 
     int success = concatToJsonData(dest, key1);
 
     // Convert integer to string
-    snprintf(invoice_id_value_as_str, sizeof(invoice_id_value_as_str), "%d", invoice_id);
+    snprintf(invoice_line_id_value_as_str, sizeof(invoice_line_id_value_as_str), "%d", invoice_id);
 
-    success = concatToJsonData(dest, invoice_id_value_as_str);
+    success = concatToJsonData(dest, invoice_line_id_value_as_str);
 
 
-    char key2[22] = ", \"bank_reference\": ";
+    char key2[19] = ", \"product_name\": ";
+    key2[18] = '\0';
     success = concatToJsonData(dest, key2);
 
     char quote[2] = "\"";
     success = concatToJsonData(dest, quote);
-    //success = concatToJsonData(dest, bank_reference);
+    success = concatToJsonData(dest, product_name);
     success = concatToJsonData(dest, quote);
 
     return success;
@@ -409,23 +415,76 @@ void insert_string_safely(_Inout_ char** dest, _In_ const char* src, _In_ int po
         return;  // Return if any of the input pointers are NULL
     }
 
-    size_t dest_len = strlen(*dest);
-    size_t src_len = strlen(src);
-    char* new_dest = (char*)realloc(*dest, dest_len + src_len + 1);
+    char* start = NULL;
+    char* end = NULL;
+
+    split_string(pos, dest, &start, &end);
+
+    size_t lenS = strlen(start);
+    size_t lensrc = strlen(src);
+    size_t lenE = strlen(end);
+
+    size_t tot = lenS + lensrc + lenE;
+
+    char* new_dest = (char*)realloc(*dest, tot + 1);
     if (new_dest == NULL) {
         return;  // Return if memory allocation failed
     }
 
-    // Copy the first part of dest into new_dest
-    strncpy_s(new_dest, dest_len + src_len + 1, *dest, pos);
-
-    // Append src to new_dest
-    strcat_s(new_dest, dest_len + src_len + 1, src);
-
     // Append the rest of dest to new_dest
-    strcat_s(new_dest, dest_len + src_len + 1, *dest + pos);
+    strncpy_s(new_dest, tot + 1, start, strlen(start));
+    strcat_s(new_dest, tot + 1, src);
+    strcat_s(new_dest, tot + 1, end);
+
+    free(start);
+    free(end);
 
     *dest = new_dest;  // Update the dest pointer to point to the new string
+}
+
+int split_string(int index, char** src, char** start, char** end) 
+{
+    size_t first = strlen(*src);
+    if (index < 0 || index > first)
+    {
+        return -1;
+    }
+    *start = (char*)malloc((index + 1) * sizeof(char));
+    if (*start)
+    {
+        strncpy_s(*start, index + 1, *src, index);
+        if (*start)
+        {
+            size_t st = strlen(*start);
+            (*start)[st] = '\0'; // Null-terminate the first part
+        }
+
+        size_t nd = strlen(*src) - (index + 1) + 1;
+
+        *end = (char*)malloc((nd + 1) * sizeof(char));
+        if (*end)
+        {
+            strcpy_s(*end, nd + 1, *src + index);
+            if (*end)
+            {
+                size_t second = strlen(*end);
+                (*end)[second] = '\0';
+            }
+            else
+            {
+                return 0;
+            }
+        }
+        else
+        {
+            return 0;
+        }
+    }
+    else
+    {
+        return 0;
+    }
+    return 1;
 }
 
 int find_index_of_invoices_opening_bracket(_In_ const char* json) {
@@ -440,7 +499,7 @@ int find_index_of_invoices_opening_bracket(_In_ const char* json) {
 }
 
 
-int find_index_of_invoices_closing_bracket(_In_ const char* json) {
+int find_index_of_invoices_closing_bracketXXX(_In_ const char* json) {
     const char* invoices_key = "]";
     char* invoices_location = strstr(json, invoices_key);
     if (invoices_location != NULL) {
@@ -448,5 +507,76 @@ int find_index_of_invoices_closing_bracket(_In_ const char* json) {
     }
     else {
         return -1;  // Return -1 if "invoices": [ is not found in the JSON string
+    }
+}
+ 
+int find_index_of_invoice_lines_opening_bracket(_In_ const char* json) 
+{
+    const char* invoice_lines_key = "\"invoice_lines\": [";
+    char* invoice_lines_location = strstr(json, invoice_lines_key);
+    if (invoice_lines_location != NULL) 
+    {
+        return invoice_lines_location - json + strlen(invoice_lines_key) - 1;
+    }
+    else 
+    {
+        return -1;  // Return -1 if "invoices": [ is not found in the JSON string
+    }
+}
+
+int find_latest_index_of_invoice_lines_opening_bracket(const char* json) 
+{
+    const char* invoice_lines_key = "\"invoice_lines\": [";
+    char* invoice_lines_location = strstr(json, invoice_lines_key);
+    char* latest_location = invoice_lines_location;
+
+    // Find the latest occurrence of invoice_lines_key in json
+    while (invoice_lines_location != NULL) {
+        latest_location = invoice_lines_location;
+        invoice_lines_location = strstr(invoice_lines_location + 1, invoice_lines_key);
+    }
+
+    if (latest_location != NULL) {
+        return latest_location - json + strlen(invoice_lines_key) - 1;
+    }
+    else {
+        return -1;  // Return -1 if "invoice_lines": [ is not found in the JSON string
+    }
+}
+
+int find_latest_index_of_invoice_line_id(const char* json, int index)
+{
+    //const char* invoice_lines_key = "\"invoice_lines\": ["; invoice_line_id
+    const char* invoice_line_id_key = "\"invoice_line_id\": ";
+    char* invoice_line_id_location = strstr(json, invoice_line_id_key);
+    char* latest_location = invoice_line_id_location;
+
+    // Find the latest occurrence of invoice_lines_key in json
+    while (invoice_line_id_location != NULL) {
+        latest_location = invoice_line_id_location;
+        invoice_line_id_location = strstr(invoice_line_id_location + 1, invoice_line_id_key);
+    }
+
+    if (latest_location != NULL) {
+        return latest_location - json + strlen(invoice_line_id_key) - 1;
+    }
+    else {
+        return -1;  // Return -1 if "invoice_lines": [ is not found in the JSON string
+    }
+}
+
+int find_index_of_invoices_closing_bracket(const char* json, int start_index) 
+{
+    if (json == NULL || start_index < 0 || start_index >= strlen(json)) {
+        return -1;  // Return -1 if the input is invalid
+    }
+
+    const char* invoices_key = "]";
+    char* invoices_location = strstr(json + start_index, invoices_key);
+    if (invoices_location != NULL) {
+        return invoices_location - json;
+    }
+    else {
+        return -1;  // Return -1 if "]" is not found in the JSON string after start_index
     }
 }

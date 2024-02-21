@@ -13,6 +13,10 @@
 #define ERROR_CONNECTION_STRING_UNAVAILABLE -2
 #define ERROR_DBOPEN_FAILED                 -3
 
+#define true 1
+#define false 0
+#define bool int
+
 node_t* s = NULL;
 
 // Function declaration

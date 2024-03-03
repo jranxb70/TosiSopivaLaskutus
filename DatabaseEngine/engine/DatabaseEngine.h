@@ -33,9 +33,9 @@ typedef struct DBError {
 extern "C" {
 #endif
 
-	void DB_ENGINE_LIBRARY_EXPORT addNewInvoiceData(
-		_In_ char*					arr, 
-		_In_ int					size);
+	int DB_ENGINE_LIBRARY_EXPORT  addNewInvoiceData(
+		_In_ char*					invoicing_data_json, 
+		_In_ int					length);
 
 	void DB_ENGINE_LIBRARY_EXPORT createTables();
 

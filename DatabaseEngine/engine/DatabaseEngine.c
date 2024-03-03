@@ -595,7 +595,7 @@ void addCustomer(
 
 
 /**
-* This functions adds three tables into a database.
+* This function adds three tables into a database.
 * The tables are: a customer, an invoice and an invoice_line tables.
 */
 void createTables()
@@ -669,27 +669,58 @@ void createTables()
 }
 
 /**
+* This function adds a new invoice with invoice lines to database.
 * 
+* @param invoicing_data_json The invoicing data as a string. This must be in proper json data containing every mandatory items.
+* @param length The length of the invoicing_data_json string
 */
-void addNewInvoiceData(_In_ char* arr, _In_ int size)
+int addNewInvoiceData(_In_ char* invoicing_data_json, _In_ int length)
 {
     // Parse the JSON string
-    cJSON* root = cJSON_Parse(arr);
+    cJSON* root = cJSON_Parse(invoicing_data_json);
 
     if (root)
     {
+        int customer_id = -1;
         int invoice_id = -1;
 
         bool open_database =                false;
+
         cJSON* id =                         cJSON_GetObjectItem(root, "customer_id");
-        int customer_id =                   id->valueint;
+        if (!id)
+        {
+            goto exit;
+        }
 
         cJSON* bankRef =                    cJSON_GetObjectItem(root, "bank_reference");
+        if (!bankRef)
+        {
+            goto exit;
+        }
 
         cJSON* invoice_subtotal =           cJSON_GetObjectItem(root, "invoice_subtotal");
+        if (!invoice_subtotal)
+        {
+            goto exit;
+        }
+
         cJSON* invoice_tax =                cJSON_GetObjectItem(root, "invoice_tax");
+        if (!invoice_tax)
+        {
+            goto exit;
+        }
+
         cJSON* invoice_total =              cJSON_GetObjectItem(root, "invoice_total");
+        if (!invoice_total)
+        {
+            goto exit;
+        }
+
         cJSON* invoice_date =               cJSON_GetObjectItem(root, "invoice_date");
+        if (!invoice_date)
+        {
+            goto exit;
+        }
 
         char fileName[21] = "connectionstring.txt";
         DBERROR* err = NULL;
@@ -715,7 +746,7 @@ void addNewInvoiceData(_In_ char* arr, _In_ int size)
 
         addInvoice(
             _In_(bool)                     open_database,
-            _In_(int)                      customer_id,
+            _In_(int)                      id->valueint,
             _In_                           myTimestamp,
             _In_(char*)                    bankRef->valuestring,
             _In_(double)                   invoice_subtotal->valuedouble,
@@ -732,9 +763,28 @@ void addNewInvoiceData(_In_ char* arr, _In_ int size)
         for (int index = 0; index < size; index++)
         {
             item =                  cJSON_GetArrayItem(invoiceLines, index);
+            if (!item)
+            {
+                goto exit;
+            }
+
             cJSON* product_name =   cJSON_GetObjectItem(item, "product_name");
+            if (product_name)
+            {
+                goto exit;
+            }
+
             cJSON* quantity =       cJSON_GetObjectItem(item, "quantity");
+            if (!quantity)
+            {
+                goto exit;
+            }
+
             cJSON* price =          cJSON_GetObjectItem(item, "price");
+            if (!price)
+            {
+                goto exit;
+            }
 
             addInvoiceLine(
                 _In_(bool)                   open_database,
@@ -750,6 +800,9 @@ void addNewInvoiceData(_In_ char* arr, _In_ int size)
         }
 
         cJSON_Delete(root);
+        return 0;
     }
+exit:
+    return -1;
 }
 

@@ -34,12 +34,12 @@ void SQLErrorUtil(_In_ SQLRETURN retcode, _In_ SQLHSTMT hstmt, _Out_ node_t** li
                 memset(err_details->message, 0, sizeof(err_details->message));
 
                 strcpy_s(err_details->sqlstate, 6, sqlstate);
-            err_details->native_error = native_error;
-            err_details->message_len = message_len;
-            strcpy_s(err_details->message, SQL_MAX_MESSAGE_LENGTH, message);
+                err_details->native_error = native_error;
+                err_details->message_len = message_len;
+                strcpy_s(err_details->message, SQL_MAX_MESSAGE_LENGTH, message);
 
-            Append(listItems, err_details);
+                Append(listItems, err_details);
+            }
         }
     }
-}
 }

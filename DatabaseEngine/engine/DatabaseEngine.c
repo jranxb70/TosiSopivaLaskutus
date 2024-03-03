@@ -681,22 +681,6 @@ void addNewInvoiceData(_In_ char* arr, _In_ int size)
     {
         int invoice_id = -1;
 
-        //double invoice_subtotal = 0.0;
-        //double invoice_tax = 0.00;
-        //double invoice_total = 0.00;
-
-        //char* product = "kalja";
-        //int quantity = 10;
-        //double price = 0.84;
-
-        //char* product2 = "siideri";
-        //int quantity2 = 8;
-        //double price2 = 1.64;
-
-        //char* product3 = "lonkero";
-        //int quantity3 = 6;
-        //double price3 = 2.04;
-
         bool open_database =                false;
         cJSON* id =                         cJSON_GetObjectItem(root, "customer_id");
         int customer_id =                   id->valueint;

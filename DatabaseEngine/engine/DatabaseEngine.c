@@ -3,19 +3,18 @@
 #include "Utilities.h"
 #include "cJSON.h"
 
+
 /**
 * This data is global due to another function must be able to free the memory.
 */
 char* json_data = NULL;
 cJSON* root = NULL;
 
-#define SQL_RESULT_LEN 240
+#define SQL_RESULT_LEN       240
 #define SQL_RETURN_CODE_LEN 1000
 
 SQLHENV henv;  // Environment handle
 SQLHDBC hdbc;  // Connection handle
-SQLRETURN ret; // Return code
-
 
 SQLCHAR result[SQL_RESULT_LEN];
 SQLCHAR retcode[SQL_RETURN_CODE_LEN];
@@ -24,52 +23,64 @@ SQLCHAR retcode[SQL_RETURN_CODE_LEN];
 * This function opens the connection to a database using an ODBC driver.
 * 
 * @param fileName: A name of the file that must contain the connection string
-* @return: An integer value indication a success or an error in the function.
-*          Zero means that the function has succeeded
+* @param dbErr: Holds information for what phase went wrong and with what err code.
 */
-int dbOpen(
-    _In_ char* fileName) 
+void dbOpen(
+    _In_ char* fileName,
+    _Out_ DBERROR** dbErr)
 {
-    int err = ERROR_INITIAL;
 
     char* workingDirectory = NULL;
     char* connectionStringW = NULL;
 
+    *dbErr = NULL;
+
+    int err = 0;
+
+    *dbErr = (DBERROR*)malloc(sizeof(DBERROR));
+
+    (*dbErr)->errorCode = 0;
+    (*dbErr)->failedFunction = ErrFuncNone;
+
     // Allocate an environment handle
-    ret = SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &henv);
-    if (ret != SQL_SUCCESS && ret != SQL_SUCCESS_WITH_INFO) {
+    SQLRETURN retHandle = SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &henv);
+    if (retHandle != SQL_SUCCESS && retHandle != SQL_SUCCESS_WITH_INFO) {
         fprintf(stderr, "Error allocating environment handle\n");
-        ret = ERROR_CODE;
+        SQLRETURN retHandle = SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &henv);
+        (*dbErr)->errorCode = retHandle;
+        (*dbErr)->failedFunction = ErrFuncSQLAllocHandleA;
         goto error;
     }
 
     // Set the ODBC version
-    ret = SQLSetEnvAttr(henv, SQL_ATTR_ODBC_VERSION, (SQLPOINTER)SQL_OV_ODBC3, 0);
-    if (ret != SQL_SUCCESS && ret != SQL_SUCCESS_WITH_INFO) {
+    SQLRETURN retEnvAttr = SQLSetEnvAttr(henv, SQL_ATTR_ODBC_VERSION, (SQLPOINTER)SQL_OV_ODBC3, 0);
+    if (retEnvAttr != SQL_SUCCESS && retEnvAttr != SQL_SUCCESS_WITH_INFO) {
         fprintf(stderr, "Error setting ODBC version\n");
         SQLFreeHandle(SQL_HANDLE_ENV, henv);
-        ret = ERROR_CODE;
+        (*dbErr)->errorCode = retEnvAttr;
+        (*dbErr)->failedFunction = ErrFuncSQLSetEnvAttrA;
         goto error;
     }
 
-    // Allocate a connection handle
-    ret = SQLAllocHandle(SQL_HANDLE_DBC, henv, &hdbc);
-    if (ret != SQL_SUCCESS && ret != SQL_SUCCESS_WITH_INFO) {
+    //// Allocate a connection handle
+    SQLRETURN retConHandle = SQLAllocHandle(SQL_HANDLE_DBC, henv, &hdbc);
+    if (retConHandle != SQL_SUCCESS && retConHandle != SQL_SUCCESS_WITH_INFO) {
         fprintf(stderr, "Error allocating connection handle\n");
         SQLFreeHandle(SQL_HANDLE_ENV, henv);
-        ret = ERROR_CODE;
+        (*dbErr)->errorCode = retConHandle;
+        (*dbErr)->failedFunction = ErrFuncSQLAllocHandleB;
         goto error;
     }
 
     if (-1 == (err = getWorkingDir(&workingDirectory)))
     {
-        ret = ERROR_CODE;
+        //ret = ERROR_CODE;
         goto error;
     }
 
     if (-1 == (err = getConnectionString(&workingDirectory, fileName, &connectionStringW)))
     {
-        ret = ERROR_CODE;
+        //ret = ERROR_CODE;
         goto error;
     }
 
@@ -103,9 +114,22 @@ error:
 void dbClose()
 {
     // Disconnect and free handles
-    SQLDisconnect(hdbc);
-    SQLFreeHandle(SQL_HANDLE_DBC, hdbc);
-    SQLFreeHandle(SQL_HANDLE_ENV, henv);
+    SQLRETURN retValDisconnect = SQLDisconnect(hdbc);
+    if (retValDisconnect != SQL_SUCCESS && retValDisconnect != SQL_SUCCESS_WITH_INFO) {
+        fprintf(stderr, "Error freeing environment handle\n");
+        retValDisconnect = ERROR_CODE;
+    }
+    SQLRETURN retValHDBC = SQLFreeHandle(SQL_HANDLE_DBC, hdbc);
+    if (retValHDBC != SQL_SUCCESS && retValHDBC != SQL_SUCCESS_WITH_INFO) {
+        fprintf(stderr, "Error freeing environment handle\n");
+        retValHDBC = ERROR_CODE;
+    }
+    // Free the environment handle
+    SQLRETURN retVal = SQLFreeHandle(SQL_HANDLE_ENV, henv);
+    if (retVal != SQL_SUCCESS && retVal != SQL_SUCCESS_WITH_INFO) {
+        fprintf(stderr, "Error freeing environment handle\n");
+        retVal = ERROR_CODE;
+    }
 }
 
 /**
@@ -113,6 +137,7 @@ void dbClose()
 */
 int free_json_data() {
     int done = 744;
+
     free(json_data);
     return done;
 }
@@ -130,28 +155,16 @@ void free_sql_error_details()
 void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out_ node_t** errorList)
 {
     char fileName[21] = "connectionstring.txt";
-    int databaseOpen = dbOpen(fileName);
+    DBERROR* err = NULL;
+    dbOpen(fileName, &err);
 
-    if (!databaseOpen)
+    if (err->errorCode < 0)
+    {
+        free(err);
         return;
-
-    // Allocate memory for JSON data
-    int sizeofString = 0;
-    json_data = (char*)malloc(sizeofString);  // Example: allocating 100 bytes
-    if (json_data == NULL) {
-        perror("Error allocating memory for JSON data");
-        exit(EXIT_FAILURE);
     }
-    json_data[0] = '\0';
-
-    char startMarkOfJsonData[2] = "{";
-    char endMarkOfJsonData[2] = "}";
-
-    char commaOfJsonData[2] = ",";
-
-    char closingAndCommaOfJsonData[5] = "}, {";
-
-    int success = concatToJsonData(&json_data, startMarkOfJsonData);
+    free(err);
+    err = NULL;
 
     SQLHSTMT hstmt;
     SQLRETURN retcode;
@@ -179,14 +192,6 @@ void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out
     // Process the rows and print to screen
     if (retcode == SQL_SUCCESS || retcode == SQL_SUCCESS_WITH_INFO) 
     {
-        //SQLINTEGER invoice_id;
-        //SQL_TIMESTAMP_STRUCT ts;
-
-        //SQLCHAR invoice_bankreference[20];
-
-        int invoice_index = 0;
-        int place = -1;
-
         do {
             SQLCHAR columnName[64];
             SQLSMALLINT columnNameLength;
@@ -222,14 +227,6 @@ void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out
                             zip,
                             city);
 
-                    parseCustomerData(customerId,
-                        firstName,
-                        lastName,
-                        address,
-                        zip,
-                        city,
-                        &json_data);
-
                     cJSON_AddNumberToObject(root, "customer_id", customerId);
                     cJSON_AddStringToObject(root, "first_name", firstName);
                     cJSON_AddStringToObject(root, "last_name", lastName);
@@ -237,19 +234,11 @@ void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out
                     cJSON_AddStringToObject(root, "zip", zip);
                     cJSON_AddStringToObject(root, "city", city);
 
-                    //cJSON* invoices = cJSON_CreateArray();
                     invoices = cJSON_AddArrayToObject(root, "invoices");
-                    //cJSON_AddStringToObject(root, "customer_id", customerId);
                 }
             }
             else if (strcmp((char*)columnName, "invoice_id") == 0) 
             {
-                if (invoice_index > 0)
-                {
-                    // success = concatToJsonData(&json_data, endMarkOfJsonData);
-                }
-
-
                 // Process the invoice data
                 SQLINTEGER invoiceId;
                 SQLCHAR bankReference[64];
@@ -259,53 +248,16 @@ void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out
                     SQLGetData(hstmt, 4, SQL_C_CHAR, bankReference, sizeof(bankReference), NULL);
                     printf("Invoice ID: %d, Bank Reference: %s\n", invoiceId, bankReference);
 
-                    // Allocate memory for JSON data
-                    int sizeofString = 0;
-                    char* temp_data = (char*)malloc(sizeofString);  // Example: allocating 100 bytes
-                    if (temp_data == NULL) 
-                    {
-                        perror("Error allocating memory for JSON data");
-                        exit(EXIT_FAILURE);
-                    }
-                    temp_data[0] = '\0';
-                    
-                    int indexOpeningBracket = -1;
-
-                    //if (invoice_index == 0)
-                    //{
-                    indexOpeningBracket = find_index_of_invoices_opening_bracket(json_data);
-                    place = indexOpeningBracket + 1;
-                    success = concatToJsonData(&temp_data, startMarkOfJsonData);
-                    //}
-                    //else
-                    //{
-                    //    index = find_index_of_invoices_closing_bracket(json_data, place);
-                    //    place = index;
-                    //    success = concatToJsonData(&temp_data, commaOfJsonData);
-                    //}
-                    invoice_index++;
-
                     cJSON* invoice = cJSON_CreateObject();
                     cJSON_AddNumberToObject(invoice, "invoice_id", invoiceId);
                     cJSON_AddStringToObject(invoice, "bank_reference", bankReference);
                     invoice_lines = cJSON_AddArrayToObject(invoice, "invoice_lines");
 
                     cJSON_AddItemToArray(invoices, invoice);
-
-                    parseInvoiceData(customer_id, invoiceId, bankReference, &temp_data);
-
-                    success = concatToJsonData(&temp_data, endMarkOfJsonData);
-
-                    insert_string_safely(&json_data, temp_data, place);
-                    free(temp_data);
                 }
             }
             else if (strcmp((char*)columnName, "invoice_line_id") == 0) 
             {
-                int invoice_line_index = 0;
-                int place = -1;
-                bool closingDone = false;
-
                 // Process the invoice line data
                 SQLINTEGER lineId;
                 SQLINTEGER invoiceId;
@@ -316,23 +268,11 @@ void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out
                     SQLGetData(hstmt, 3, SQL_C_CHAR, productName, sizeof(productName), NULL);
                     printf("  Line ID: %d, Product Name: %s\n", lineId, productName);
 
-                    // Allocate memory for JSON data
-                    int sizeofString = 0;
-                    char* temp_data = (char*)malloc(sizeofString);  // Example: allocating 100 bytes
-                    if (temp_data == NULL) {
-                        perror("Error allocating memory for JSON data");
-                        exit(EXIT_FAILURE);
-                    }
-                    temp_data[0] = '\0';
-
                     ///////////////////////////////////////////
-
-                    //invoice_lines
-
 
                     cJSON* invoice_line = cJSON_CreateObject();
                     cJSON_AddNumberToObject(invoice_line, "invoice_line_id", lineId);
-                    cJSON_AddStringToObject(invoice_line, "bank_reference", productName);
+                    cJSON_AddStringToObject(invoice_line, "product_name", productName);
 
                     cJSON* invoices = cJSON_GetObjectItem(root, "invoices");
                     int arraySizeInvoices = cJSON_GetArraySize(invoices);
@@ -349,85 +289,17 @@ void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out
                             cJSON_AddItemToArray(invoice_lines, invoice_line);
                             break;
                         }
-                        wtf++;
                     }
-
-                    
-
-                    int index = -1;
-
-
-                    if (invoice_line_index == 0)
-                    {
-                        index = find_latest_index_of_invoice_lines_opening_bracket(json_data);
-                        place = index + 1;
-                        //if (closingDone)
-                        //{
-                        success = concatToJsonData(&temp_data, startMarkOfJsonData);
-                        //}
-                        //else
-                        //{
-                        //    success = concatToJsonData(&temp_data, curlyStartMarkOfJsonData);
-                        //}
-                        closingDone = false;
                     }
-                    else if (closingDone)
-                    {
-                        index = find_latest_index_of_invoice_lines_opening_bracket(json_data);
-                        //index = find_latest_index_of_invoice_line_opening_bracketC
-                        index = find_latest_index_of_invoice_line_id(json_data, index);
-                        index = find_index_of_invoices_closing_bracket(json_data, index);
-
-                        success = concatToJsonData(&temp_data, closingAndCommaOfJsonData);
-
-                        place = index;// +1;
-
                     }
-                    else
-                    {
-                       // index = find_index_of_invoice_lines_closing_bracket(json_data);
-                        index = find_index_of_invoices_closing_bracket(json_data, place);
-                        place = index;
-                        success = concatToJsonData(&temp_data, closingAndCommaOfJsonData);
-                        closingDone = true;
-                    }
-                    invoice_line_index++;
-
-                    parseInvoiceLineData(lineId, productName, &temp_data);
-
-                    insert_string_safely(&json_data, temp_data, place);
-                    
-                    ///////////////////////////////////////////
-
-                    free(temp_data);
-                }
-                // Allocate memory for JSON data
-                int sizeofString = 0;
-                char* temp_data = (char*)malloc(sizeofString);  // Example: allocating 100 bytes
-                if (temp_data == NULL) {
-                    perror("Error allocating memory for JSON data");
-                    exit(EXIT_FAILURE);
-                }
-                temp_data[0] = '\0';
-                int index = find_latest_index_of_invoice_line_id(json_data, place);
-                int last_index = find_index_of_invoices_closing_bracket(json_data, index);
-                success = concatToJsonData(&temp_data, endMarkOfJsonData);
-                insert_string_safely(&json_data, temp_data, last_index);
-
-                free(temp_data);
-            }
         } while (SQLMoreResults(hstmt) == SQL_SUCCESS);
     }
-
-    success = concatToJsonData(&json_data, endMarkOfJsonData);
 
     char* archieCruzPlusIida = cJSON_Print(root);
 
     printf("%s", archieCruzPlusIida);
 
     *jsonString = archieCruzPlusIida;
-
-    //cJSON_
 
     cJSON_Delete(root);
 
@@ -468,17 +340,28 @@ void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out
 * @param invoiceline_price: ...
 */
 void addInvoiceLine(
-    _In_ int invoice_id, 
-    _In_ char* invoiceline_product,
-    _In_ int invoiceline_quantity,
-    _In_ double invoiceline_price)
+    _In_ bool                   open_database,
+    _In_ int                    invoice_id, 
+    _In_ char*                  invoiceline_product,
+    _In_ int                    invoiceline_quantity,
+    _In_ double                 invoiceline_price)
 {
     char fileName[21] = "connectionstring.txt";
-    int databaseOpen = dbOpen(fileName);
+    DBERROR* err = NULL;
+    int ret = -10;
 
-    if (!databaseOpen)
+    if (open_database)
+    {
+        dbOpen(fileName, &err);
+
+        if (err->errorCode < 0)
+        {
+            free(err);
         return;
-
+        }
+        ret = err->errorCode;
+        free(err);
+    }
 
     SQLHSTMT hstmt;
     SQLINTEGER id_invoice;
@@ -488,7 +371,8 @@ void addInvoiceLine(
 
     sprintf_s(query, bufferCount, "{CALL dbo.AddInvoiceLine (?, ?, ?, ?)}");
 
-    if (SQL_SUCCEEDED(ret)) {
+    if (SQL_SUCCEEDED(ret) || !open_database)
+    {
         // Allocate a statement handle
         SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
 
@@ -525,7 +409,10 @@ void addInvoiceLine(
         SQLGetDiagRec(SQL_HANDLE_DBC, hdbc, 1, NULL, NULL, retcode, SQL_RETURN_CODE_LEN, NULL);
         printf("Error connecting to database: %s\n", retcode);
     }
+    if (open_database)
+    {
     dbClose();
+}
 }
 
 /**
@@ -540,6 +427,7 @@ void addInvoiceLine(
 * @param invoice_idOut:
 */
 void addInvoice(
+    _In_ bool                   open_database,
     _In_ int                    customer_id,
     _In_ SQL_TIMESTAMP_STRUCT   invoice_date,
     _In_ char*                  invoice_bankreference,
@@ -551,10 +439,21 @@ void addInvoice(
     *invoice_idOut = 0;
 
     char fileName[21] = "connectionstring.txt";
-    int databaseOpen = dbOpen(fileName);
+    DBERROR* err = NULL;
+    int ret = -10;
 
-    if (!databaseOpen)
+    if (open_database)
+    {
+        dbOpen(fileName, &err);
+
+        if (err->errorCode < 0)
+        {
+            free(err);
         return;
+        }
+        ret = err->errorCode;
+        free(err);
+    }
 
     SQLHSTMT hstmt;
     SQLINTEGER id_invoice;
@@ -564,7 +463,8 @@ void addInvoice(
     
     sprintf_s(query, bufferCount, "{? = CALL dbo.AddInvoice (?, ?, ?, ?, ?, ?)}");
 
-    if (SQL_SUCCEEDED(ret)) {
+    if (SQL_SUCCEEDED(ret) || !open_database)
+    {
         // Allocate a statement handle
         SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
 
@@ -610,7 +510,10 @@ void addInvoice(
         SQLGetDiagRec(SQL_HANDLE_DBC, hdbc, 1, NULL, NULL, retcode, SQL_RETURN_CODE_LEN, NULL);
         printf("Error connecting to database: %s\n", retcode);
     }
+    if (open_database)
+    {
     dbClose();
+}
 }
 
 /**
@@ -634,10 +537,16 @@ void addCustomer(
     *customer_id = 0;
 
     char fileName[21] = "connectionstring.txt";
-    int databaseOpen = dbOpen(fileName);
+    DBERROR* err = NULL;
+    dbOpen(fileName, &err);
 
-    if (!databaseOpen)
+    if (err->errorCode < 0)
+    {
+        free(err);
         return;
+    }
+    int ret = err->errorCode;
+    free(err);
 
     char query[1024];
     size_t bufferCount = 1024;     
@@ -685,28 +594,6 @@ void addCustomer(
     dbClose();
 }
 
-/**
-*
-*/
-void newInvoice()
-{
-    int customer_id = 0;
-    SQL_TIMESTAMP_STRUCT invoice_date;
-    char* invoice_bankreference = "";
-    double invoice_subtotal;
-    double invoice_tax = 0.00;
-    double invoice_total = 0.00;
-    int* invoice_idOut = NULL;
-
-    addInvoice(
-        _In_(int)                   customer_id,
-        _In_                        invoice_date,
-        _In_(char*)                 invoice_bankreference,
-        _In_(double)                invoice_subtotal,
-        _In_(double)                invoice_tax,
-        _In_(double)                invoice_total,
-        _Out_(int*)                 invoice_idOut);
-}
 
 /**
 * This functions adds three tables into a database.
@@ -715,10 +602,16 @@ void newInvoice()
 void createTables()
 {
     char fileName[21] = "connectionstring.txt";
-    int databaseOpen = dbOpen(fileName);
+    DBERROR* err = NULL;
+    dbOpen(fileName, &err);
 
-    if (!databaseOpen)
+    if (err->errorCode < 0)
+    {
+        free(err);
         return;
+    }
+    int ret = err->errorCode;
+    free(err);
 
     // Assume you have a stored procedure named "CreateTablesIfNotExist"
     SQLCHAR* storedProcedureCall = (SQLCHAR*) "EXEC [dbo].[CreateTablesIfNotExist]";
@@ -775,3 +668,105 @@ void createTables()
     }
     dbClose();
 }
+
+/**
+* 
+*/
+void addNewInvoiceData(_In_ char* arr, _In_ int size)
+{
+    // Parse the JSON string
+    cJSON* root = cJSON_Parse(arr);
+
+    if (root)
+    {
+        int invoice_id = -1;
+
+        //double invoice_subtotal = 0.0;
+        //double invoice_tax = 0.00;
+        //double invoice_total = 0.00;
+
+        //char* product = "kalja";
+        //int quantity = 10;
+        //double price = 0.84;
+
+        //char* product2 = "siideri";
+        //int quantity2 = 8;
+        //double price2 = 1.64;
+
+        //char* product3 = "lonkero";
+        //int quantity3 = 6;
+        //double price3 = 2.04;
+
+        bool open_database =                false;
+        cJSON* id =                         cJSON_GetObjectItem(root, "customer_id");
+        int customer_id =                   id->valueint;
+
+        cJSON* bankRef =                    cJSON_GetObjectItem(root, "bank_reference");
+
+        cJSON* invoice_subtotal =           cJSON_GetObjectItem(root, "invoice_subtotal");
+        cJSON* invoice_tax =                cJSON_GetObjectItem(root, "invoice_tax");
+        cJSON* invoice_total =              cJSON_GetObjectItem(root, "invoice_total");
+        cJSON* invoice_date =               cJSON_GetObjectItem(root, "invoice_date");
+
+        char fileName[21] = "connectionstring.txt";
+        DBERROR* err = NULL;
+        int ret = -10;
+
+        bool open_database_general = true;
+
+        if (open_database_general)
+        {
+            dbOpen(fileName, &err);
+
+            if (err->errorCode < 0)
+            {
+                free(err);
+                return;
+            }
+            ret = err->errorCode;
+            free(err);
+        }
+
+        SQL_TIMESTAMP_STRUCT myTimestamp;
+        stringToTimestamp(invoice_date->valuestring, &myTimestamp);
+
+        addInvoice(
+            _In_(bool)                     open_database,
+            _In_(int)                      customer_id,
+            _In_                           myTimestamp,
+            _In_(char*)                    bankRef->valuestring,
+            _In_(double)                   invoice_subtotal->valuedouble,
+            _In_(double)                   invoice_tax->valuedouble,
+            _In_(double)                   invoice_total->valuedouble,
+            _Out_(int*)                    &invoice_id);
+
+        cJSON* invoiceLines =       cJSON_GetObjectItem(root, "invoice_lines");
+
+        int size =                  cJSON_GetArraySize(invoiceLines);
+
+        cJSON* item = NULL;
+
+        for (int index = 0; index < size; index++)
+        {
+            item =                  cJSON_GetArrayItem(invoiceLines, index);
+            cJSON* product_name =   cJSON_GetObjectItem(item, "product_name");
+            cJSON* quantity =       cJSON_GetObjectItem(item, "quantity");
+            cJSON* price =          cJSON_GetObjectItem(item, "price");
+
+            addInvoiceLine(
+                _In_(bool)                   open_database,
+                _In_(int)                    invoice_id,
+                _In_(char*)                  product_name->valuestring, // invoiceline_product
+                _In_(int)                    quantity->valueint,        // invoiceline_quantity
+                _In_(double)                 price->valuedouble);       // invoiceline_price
+        }
+
+        if (open_database_general)
+        {
+            dbClose();
+        }
+
+        cJSON_Delete(root);
+    }
+}
+

@@ -2,32 +2,31 @@
 #define UTILITIES_H
 
 #include <Windows.h>
+#include <sql.h>
+#include <sqlext.h>
 
 #define ERROR_UTILITY -10
 #define ERROR_REALLOC_FAILED -11
 
+
+void save_to_file(const char* content, const char* filename);
+
 _Success_(return == 0)
 int getWorkingDir(
-	_Out_ char** pWorkingDir);
+	_Out_   char**				pWorkingDir);
 
 int getConnectionString(
-	_Inout_ char** workingDirectory,
-	_In_ char* fileName,
-	_Out_ char** connectionString);
+	_Inout_ char**				workingDirectory,
+	_In_	char*				fileName,
+	_Out_	char**				connectionString);
 
 int concatToJsonData(
-	_Inout_ char** dest, 
-	_In_ const char* source);
+	_Inout_ char**				dest, 
+	_In_	const char*			source);
 
 int readFile(
-	_In_ char** workingDirectory,
-	_Out_ char** connectionString);
-
-int getInvoiceData(
-	_In_ int					customer_id,
-	_In_ int					invoice_id,
-	_In_ char*					bank_reference,
-	_Inout_	char**				dest);
+	_In_	char**				workingDirectory,
+	_Out_	char**				connectionString);
 
 int parseCustomerData(
 	_In_ int					customer_id,
@@ -62,5 +61,9 @@ int find_latest_index_of_invoice_lines_opening_bracket(const char* json);
 int find_index_of_invoices_closing_bracket(const char* json, int start_index);
 
 int split_string(int index, char** src, char** start, char** end);
+
+int stringToTimestamp(
+	const char*					inputString, 
+	SQL_TIMESTAMP_STRUCT*		timestamp);
 
 #endif // UTILITIES_H

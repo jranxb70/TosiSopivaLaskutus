@@ -1,5 +1,37 @@
 #include <stdio.h>
+#include <io.h>
 #include "Utilities.h"
+#include <errno.h>
+
+// Function to convert a string to SQL_TIMESTAMP_STRUCT
+int stringToTimestamp(const char* inputString, SQL_TIMESTAMP_STRUCT* timestamp) 
+{
+    int year, month, day, hour, minute, second, f;
+    int result = sscanf(inputString, "%d-%d-%d %d:%d:%d.%d", &year, &month, &day, &hour, &minute, &second, &f);
+
+    timestamp->year = year;
+    timestamp->month = month;
+    timestamp->day = day;
+    timestamp->hour = hour;
+    timestamp->minute = minute;
+    timestamp->second = second;
+    timestamp->fraction = f; // Set fractional seconds
+    return result;
+}
+
+void save_to_file(const char* content, const char* filename) {
+    FILE* file = fopen(filename, "w");  // Open the file for writing
+
+    if (file != NULL) {
+        // Write the content to the file
+        fprintf(file, "%s", content);
+        fclose(file);  // Close the file
+        printf("Content saved to %s\n", filename);
+    }
+    else {
+        printf("Error opening file %s\n", filename);
+    }
+}
 
 /**
 * This function returns a path to the working directory.
@@ -14,10 +46,12 @@ int getWorkingDir(_Out_ char** pWorkingDir)
     char cwd[1024] = "";
     *pWorkingDir = NULL;
 
-    if (_getcwd(cwd, sizeof(cwd)) != 0) {
+    if (_getcwd(cwd, sizeof(cwd)) != 0) 
+    {
         printf("Current working directory: **%s**\n", cwd);
     }
-    else {
+    else 
+    {
         perror("_getcwd() error");
         ret = ERROR_UTILITY;
         goto error;
@@ -305,6 +339,13 @@ int readFile(
 
     *connectionString = NULL;
 
+    if (_access(*workingDirectory, 4) == 0) {
+        printf("The file exists.\n");
+    }
+    else {
+        printf("The file does not exist.\n");
+    }
+
     const char* tbl = "r";// , ccs = UTF - 8";
     errno_t err = fopen_s(&file, *workingDirectory, tbl);
     if (err != 0) {
@@ -329,15 +370,10 @@ int readFile(
 
     unsigned char iso8859_1 = 0;
 
-    unsigned char* chars = (unsigned char*)malloc(sizeof(unsigned char) + 1);
+    unsigned char* chars = (unsigned char*)malloc(0);
 
     if (!!chars)
     {
-#pragma warning( push )
-#pragma warning( disable : 6011 )
-        chars[0] = 'a';
-#pragma warning( pop )
-        chars[1] = '\0';
     }
     else
     {
@@ -387,6 +423,8 @@ int readFile(
         long currentIndex = ((indexOfTheISO88591Array + 1) * sizeof(unsigned char));
         tem[currentIndex] = '\0';
 #pragma warning( pop )
+        if (indexOfTheISO88591Array == 0)
+            strcpy_s((char*)tem, (indexOfTheISO88591Array + 1) * sizeof(unsigned char) + 1, (char*)&utf8[0]);
         chars = tem;
         if (utf8[0] >= 128 && utf8[0] < 224)
         {

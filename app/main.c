@@ -3,6 +3,7 @@
 #include <stdlib.h>
 
 #include "engine/DatabaseEngine.h"
+#include "BankReferenceCalculator.h"
 
 
 int main(int argc, char *argv[])
@@ -71,7 +72,17 @@ int main(int argc, char *argv[])
     int succeeded = free_json_data();
     free_sql_error_details();
 
+    free(json);
 
+    char sample_json[2048];
+
+    char* invoice_date_str = "\"2017-01-10 17:00:05.00000\"";
+
+    snprintf(sample_json, sizeof(sample_json), "{\"customer_id\": 73, \"invoice_date\": %s, \"invoice_subtotal\": %lf, \"invoice_total\": %lf, \"invoice_tax\": %lf, \"bank_reference\" : \"10731\", \"invoice_lines\" : [{\"product_name\": \"kalja\", \"quantity\": 6, \"price\": 1.05}, {\"product_name\": \"siideri\", \"quantity\": 8, \"price\": 3.40}, {\"product_name\": \"lonkero\",\"quantity\": 12, \"price\": 2.25}]}", invoice_date_str, invoice_subtotal, invoice_total, invoice_tax);
+
+    int len = strlen(sample_json);
+
+    addNewInvoiceData(sample_json, len);
 
     return 0;
 }

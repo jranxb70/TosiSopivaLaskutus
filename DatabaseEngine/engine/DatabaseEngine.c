@@ -86,26 +86,25 @@ void dbOpen(
 
     if (!!connectionStringW)
     {
-        // Connect to the database
-        ret = SQLDriverConnect(hdbc, NULL, (SQLCHAR*)connectionStringW, SQL_NTS, NULL, 0, NULL, SQL_DRIVER_NOPROMPT);
-        if (ret != SQL_SUCCESS && ret != SQL_SUCCESS_WITH_INFO) {
+        //Connect to the database
+        SQLRETURN retConnect = SQLDriverConnect(hdbc, NULL, (SQLCHAR*)connectionStringW, SQL_NTS, NULL, 0, NULL, SQL_DRIVER_NOPROMPT);
+        if (retConnect != SQL_SUCCESS && retConnect != SQL_SUCCESS_WITH_INFO) {
             fprintf(stderr, "Error connecting to SQL Server\n");
             SQLFreeHandle(SQL_HANDLE_DBC, hdbc);
             SQLFreeHandle(SQL_HANDLE_ENV, henv);
-            ret = ERROR_DBOPEN_FAILED;
+            (*dbErr)->errorCode = retConnect;
+            (*dbErr)->failedFunction = ErrFuncSQLDriverConnectA;
             goto error;
         }
     }
     else
     {
-        ret = ERROR_CONNECTION_STRING_UNAVAILABLE;
         printf("ERROR: The connection string is unavaible.");
     }
 
 error:
     free(connectionStringW);
     free(workingDirectory);
-    return ret;
 }
 
 /**

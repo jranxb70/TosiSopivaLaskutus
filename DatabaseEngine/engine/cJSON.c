@@ -1471,7 +1471,10 @@ static cJSON_bool parse_array(cJSON * const item, parse_buffer * const input_buf
     /* check if we skipped to the end of the buffer */
     if (cannot_access_at_index(input_buffer, 0))
     {
+#pragma warning( push )
+#pragma warning( disable : 6011 )
         input_buffer->offset--;
+#pragma warning( pop )
         goto fail;
     }
 

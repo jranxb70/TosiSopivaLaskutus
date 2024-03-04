@@ -1,7 +1,7 @@
 #include "DatabaseEngine.h"
 #include "Utilities.h"
 
-
+#include "cJSON.h"
 
 /**
 * This data is global due to another function must be able to free the memory.
@@ -574,8 +574,59 @@ void addCustomer(
 /**
 *
 */
-void getCustomer(_In_ int customer_id, _Out_ cJSON** customer_data)
+void getCustomer(_In_ int customer_id, _Out_ int* customer_data) /*cJSON**/
 {
+    char fileName[21] = "connectionstring.txt";
+    DBERROR* err = NULL;
+    dbOpen(fileName, &err);
+    *customer_data = 1;
+
+    if (err->errorCode < 0)
+    {
+        free(err);
+        return;
+    }
+    int ret = err->errorCode;
+    free(err);
+
+    char query[1024];
+    size_t bufferCount = 1024;
+    sprintf_s(query, bufferCount,
+        "{? = CALL dbo.GetCustomer (?)}");
+
+    SQLHSTMT hstmt;
+    SQLINTEGER id;
+
+    char* customer_data_char = NULL;
+
+    if (SQL_SUCCEEDED(ret)) 
+    {
+        SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
+
+        SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER, 0, 0, &customer_id, 0, NULL);
+        SQLBindParameter(hstmt, 2, SQL_PARAM_OUTPUT, SQL_C_CHAR, SQL_VARCHAR, 100, 0, customer_data_char, 100, NULL);
+
+        // Prepare the SQL statement
+        ret = SQLPrepare(hstmt, query, SQL_NTS);
+        if (SQL_SUCCEEDED(ret))
+        {
+            // Execute the query
+            ret = SQLExecute(hstmt);
+            if (SQL_SUCCEEDED(ret))
+            {
+                if (SQLMoreResults(hstmt) == SQL_NO_DATA)
+                {
+                    //printf("%d", id);
+                    //*customer_id = id;
+                }
+            }
+            // Free the statement handle
+            SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
+        }
+
+    }
+
+    dbClose();
 }
 
 
@@ -720,7 +771,7 @@ int addNewInvoiceData(_In_ char* invoicing_data_json, _In_ int length)
             if (err->errorCode < 0)
             {
                 free(err);
-                return;
+                return 0;
             }
             ret = err->errorCode;
             free(err);

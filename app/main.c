@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "engine/cJSON.h"
 #include "engine/DatabaseEngine.h"
 #include "BankReferenceCalculator.h"
 
@@ -43,6 +44,11 @@ int main(int argc, char *argv[])
     char* product3 = "lonkero";
     int quantity3 = 6;
     double price3 = 2.04;
+
+    int h = 0;
+    int* customer_data = NULL;
+    customer_data = &h;
+    getCustomer(1, &customer_data);
 
     //addCustomer(firstName, lastName, address, zip, city, &customer_id);
 

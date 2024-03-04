@@ -805,7 +805,7 @@ int addNewInvoiceData(_In_ char* invoicing_data_json, _In_ int length)
             }
 
             cJSON* product_name =   cJSON_GetObjectItem(item, "product_name");
-            if (product_name)
+            if (!product_name)
             {
                 goto exit;
             }

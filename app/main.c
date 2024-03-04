@@ -23,7 +23,7 @@ int main(int argc, char *argv[])
     char zip[50] = "60200";
     char city[50] = "Seinäjoki";
 
-    int customer_id = 73;
+    int customer_id = 1;
     int invoice_id = -1;
 
     SQL_TIMESTAMP_STRUCT invoice_date = {2017, 1, 1, 12, 12, 0, 0};
@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
 
     char* invoice_date_str = "\"2017-01-10 17:00:05.00000\"";
 
-    snprintf(sample_json, sizeof(sample_json), "{\"customer_id\": 73, \"invoice_date\": %s, \"invoice_subtotal\": %lf, \"invoice_total\": %lf, \"invoice_tax\": %lf, \"bank_reference\" : \"10731\", \"invoice_lines\" : [{\"product_name\": \"kalja\", \"quantity\": 6, \"price\": 1.05}, {\"product_name\": \"siideri\", \"quantity\": 8, \"price\": 3.40}, {\"product_name\": \"lonkero\",\"quantity\": 12, \"price\": 2.25}]}", invoice_date_str, invoice_subtotal, invoice_total, invoice_tax);
+    snprintf(sample_json, sizeof(sample_json), "{\"customer_id\": %d, \"invoice_date\": %s, \"invoice_subtotal\": %lf, \"invoice_total\": %lf, \"invoice_tax\": %lf, \"bank_reference\" : \"10731\", \"invoice_lines\" : [{\"product_name\": \"kalja\", \"quantity\": 6, \"price\": 1.05}, {\"product_name\": \"siideri\", \"quantity\": 8, \"price\": 3.40}, {\"product_name\": \"lonkero\",\"quantity\": 12, \"price\": 2.25}]}", customer_id, invoice_date_str, invoice_subtotal, invoice_total, invoice_tax);
 
     int len = strlen(sample_json);
 

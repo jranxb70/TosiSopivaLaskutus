@@ -340,10 +340,10 @@ int readFile(
     *connectionString = NULL;
 
     if (_access(*workingDirectory, 4) == 0) {
-        printf("The file exists.\n");
+        printf("_access function result: \"The file exists.\"\n");
     }
     else {
-        printf("The file does not exist.\n");
+        printf("_access function result: \"The file does not exist.\"\n");
     }
 
     const char* tbl = "r";// , ccs = UTF - 8";

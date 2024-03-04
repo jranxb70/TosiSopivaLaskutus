@@ -3,8 +3,10 @@
 
 #include "DBEngineLibraryExports.h"
 #include "SqlErrorUtil.h"
+#include "cJSON.h"
 
 #include <Windows.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <sql.h>
 #include <sqlext.h>
@@ -46,6 +48,10 @@ extern "C" {
 		_In_ char*					customer_zip,
 		_In_ char*					customer_city,
 		_Out_ int*					customer_id);
+
+	void DB_ENGINE_LIBRARY_EXPORT getCustomer(
+		_In_ int					customer_id,
+		_Out_ cJSON**				customer_data);
 
 	int DB_ENGINE_LIBRARY_EXPORT  free_json_data();
 

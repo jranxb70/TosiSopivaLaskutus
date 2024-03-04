@@ -1,7 +1,6 @@
-#include <stdio.h>
 #include "DatabaseEngine.h"
 #include "Utilities.h"
-#include "cJSON.h"
+
 
 
 /**
@@ -308,28 +307,6 @@ void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out
     dbClose();
 }
 
-//{
-
-//        "customerId": 1,
-//        "first_name": "Kostos",
-// //     "last_name":  "Kouruhousu",
-//        "invoices" : [
-        //        {
-        //            "invoiceId": 100,
-        //                "amount" : 200.00,
-        //                "date" : "2024-02-19",
-        //                "lines" : [
-        //            {
-        //                "lineId": 1,
-        //                    "description" : "Product 1",
-        //                    "quantity" : 2,
-        //                    "price" : 100.00
-        //            }
-//                ]
-//        },
-
-//}
-
 /**
 * This function ...
 *
@@ -591,6 +568,14 @@ void addCustomer(
         printf("Error connecting to database: %s\n", retcode);
     }
     dbClose();
+}
+
+
+/**
+*
+*/
+void getCustomer(_In_ int customer_id, _Out_ cJSON** customer_data)
+{
 }
 
 

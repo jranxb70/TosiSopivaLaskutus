@@ -17,6 +17,8 @@ SQLHDBC hdbc;  // Connection handle
 SQLCHAR result[SQL_RESULT_LEN];
 SQLCHAR retcode[SQL_RETURN_CODE_LEN];
 
+char* json_data_char = NULL;
+
 /**
 * This function opens the connection to a database using an ODBC driver.
 * 
@@ -132,10 +134,14 @@ void dbClose()
 /**
 * This function ...
 */
-int free_json_data() {
+int free_json_data(int selector) {
     int done = 744;
 
-    free(json_data);
+    if (selector == 1)
+        free(json_data);
+    else if (selector == 2)
+        free(json_data_char);
+
     return done;
 }
 
@@ -487,8 +493,8 @@ void addInvoice(
     }
     if (open_database)
     {
-    dbClose();
-}
+        dbClose();
+    }
 }
 
 /**
@@ -583,6 +589,7 @@ int getCustomerCharOut(
     cJSON* customer_data_pointer = NULL;
     int err = getCustomer(customer_id, &customer_data_pointer);
     *customer_data = cJSON_Print(customer_data_pointer);
+    json_data_char = *customer_data;
     return err;
 }
 

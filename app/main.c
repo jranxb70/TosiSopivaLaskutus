@@ -52,7 +52,9 @@ int main(int argc, char *argv[])
     char* customer_data_1st = NULL;
     int e = getCustomerCharOut(1, &customer_data_1st);
 
-    free(customer_data_1st);
+    int success = free_json_data(2);
+
+    //free(customer_data_1st);
 
     cJSON* customer_data = NULL;
     int err = getCustomer(1, &customer_data);
@@ -82,7 +84,7 @@ int main(int argc, char *argv[])
     char* json = NULL;
     node_t* errs = NULL;
     queryInvoicesByCustomer(customer_id, &json, &errs);
-    int succeeded = free_json_data();
+    int succeeded = free_json_data(1);
     free_sql_error_details();
 
     free(json);

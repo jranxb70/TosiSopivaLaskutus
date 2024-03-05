@@ -1,15 +1,20 @@
 #ifndef UTILITIES_H
 #define UTILITIES_H
 
+#include <stdio.h>
+#include <stdlib.h>
 #include <Windows.h>
 #include <sql.h>
 #include <sqlext.h>
+#include "DBEngineLibraryExports.h"
 
 #define ERROR_UTILITY -10
 #define ERROR_REALLOC_FAILED -11
 
 
-void save_to_file(const char* content, const char* filename);
+void save_to_file(
+	const char*					content, 
+	const char*					filename);
 
 _Success_(return == 0)
 int getWorkingDir(
@@ -65,5 +70,16 @@ int split_string(int index, char** src, char** start, char** end);
 int stringToTimestamp(
 	const char*					inputString, 
 	SQL_TIMESTAMP_STRUCT*		timestamp);
+
+// Function declaration
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+	DB_ENGINE_LIBRARY_EXPORT char* convertTimestampToString(const SQL_TIMESTAMP_STRUCT* timestamp);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // UTILITIES_H

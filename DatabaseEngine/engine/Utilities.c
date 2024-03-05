@@ -1,7 +1,7 @@
-#include <stdio.h>
 #include <io.h>
-#include "Utilities.h"
+#include <time.h>
 #include <errno.h>
+#include "Utilities.h"
 
 // Function to convert a string to SQL_TIMESTAMP_STRUCT
 int stringToTimestamp(const char* inputString, SQL_TIMESTAMP_STRUCT* timestamp) 
@@ -17,6 +17,40 @@ int stringToTimestamp(const char* inputString, SQL_TIMESTAMP_STRUCT* timestamp)
     timestamp->second = second;
     timestamp->fraction = f; // Set fractional seconds
     return result;
+}
+
+char* convertTimestampToString(const SQL_TIMESTAMP_STRUCT* timestamp) 
+{
+   // Create a tm struct for time manipulation
+   struct tm timeInfo = {
+        .tm_year = timestamp->year - 1900,
+        .tm_mon = timestamp->month - 1,
+        .tm_mday = timestamp->day,
+        .tm_hour = timestamp->hour,
+        .tm_min = timestamp->minute,
+        .tm_sec = timestamp->second
+    };
+
+    // Convert to time_t (seconds since epoch)
+    time_t rawTime = mktime(&timeInfo);
+
+    // Format the timestamp string
+    char* formattedTimestamp = (char*)malloc(30); // Adjust size as needed
+    if (formattedTimestamp)
+    {
+        strftime(formattedTimestamp, 30, "%Y-%m-%d %H:%M:%S", localtime(&rawTime));
+
+        // Append the fraction part (milliseconds) if available
+        if (timestamp->fraction > 0) {
+            snprintf(formattedTimestamp + 19, 12, ".%06d", timestamp->fraction); // Microseconds
+        }
+        else
+        {
+            snprintf(formattedTimestamp + 19, 12, ".%06d", 0); // Microseconds
+        }
+    }
+
+    return formattedTimestamp;
 }
 
 void save_to_file(const char* content, const char* filename) {

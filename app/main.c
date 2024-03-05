@@ -4,6 +4,7 @@
 
 #include "engine/cJSON.h"
 #include "engine/DatabaseEngine.h"
+#include "engine/Utilities.h"
 #include "BankReferenceCalculator.h"
 
 
@@ -27,7 +28,10 @@ int main(int argc, char *argv[])
     int customer_id = 1;
     int invoice_id = -1;
 
-    SQL_TIMESTAMP_STRUCT invoice_date = {2017, 1, 1, 12, 12, 0, 0};
+    const SQL_TIMESTAMP_STRUCT invoice_date = {2017, 1, 1, 12, 12, 0, 0};
+
+    char* invoice_date_str = convertTimestampToString(&invoice_date);
+
     int bankreference = 1000;
     double invoice_subtotal = 0.0;
     double invoice_tax = 0.00;
@@ -80,8 +84,6 @@ int main(int argc, char *argv[])
 
     char sample_json[2048];
 
-    char* invoice_date_str = "2017-01-10 17:00:05.00000";
-
     snprintf(sample_json, sizeof(sample_json), "{\"customer_id\": %d, \"invoice_date\": \"%s\", \"invoice_subtotal\": %f, \
                                                  \"invoice_total\": %f, \"invoice_tax\": %f, \"bank_reference\" : \"%s\", \
                                                  \"invoice_lines\" : [{\"product_name\": \"%s\", \"quantity\": %d, \"price\": %f}, \
@@ -99,6 +101,7 @@ int main(int argc, char *argv[])
 
     /* free all objects under root and root itself */
     cJSON_Delete(customer_data);
+    free(invoice_date_str);
 
     return 0;
 }

@@ -29,6 +29,8 @@ typedef struct DBError {
 
 } DBERROR;
 
+void DisplayError(SQLCHAR* sqlState, SQLINTEGER nativeError, SQLCHAR* message, SQLSMALLINT msgLen);
+
 // Function declaration
 #ifdef __cplusplus
 extern "C" {

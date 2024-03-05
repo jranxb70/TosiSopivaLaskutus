@@ -1,7 +1,6 @@
 #include "DatabaseEngine.h"
 #include "Utilities.h"
 
-#include "cJSON.h"
 
 /**
 * This data is global due to another function must be able to free the memory.
@@ -446,14 +445,14 @@ void addInvoice(
 
         SQLINTEGER id_invoice;
 
-        SQLBindParameter(hstmt, 1, SQL_PARAM_OUTPUT, SQL_C_SLONG, SQL_INTEGER, 0, 0, &id_invoice, 0, NULL);
+        SQLBindParameter(hstmt, 1, SQL_PARAM_OUTPUT, SQL_C_SLONG,          SQL_INTEGER,               0,  0, &id_invoice,            0, NULL);
         
-        SQLBindParameter(hstmt, 2, SQL_PARAM_INPUT, SQL_C_SLONG,          SQL_INTEGER,               0,  0, &customer_id,           0, NULL);
-        SQLBindParameter(hstmt, 3, SQL_PARAM_INPUT, SQL_C_TYPE_TIMESTAMP, SQL_TYPE_TIMESTAMP,        0,  0, &invoice_date,          0, NULL);
-        SQLBindParameter(hstmt, 4, SQL_PARAM_INPUT, SQL_C_CHAR,           SQL_VARCHAR,               20, 0, invoice_bankreference,  0, NULL);
-        SQLBindParameter(hstmt, 5, SQL_PARAM_INPUT, SQL_C_DOUBLE,         SQL_DECIMAL,               10, 2, &invoice_subtotal,      0, NULL);
-        SQLBindParameter(hstmt, 6, SQL_PARAM_INPUT, SQL_C_DOUBLE,         SQL_DECIMAL,               10, 2, &invoice_tax,           0, NULL);
-        SQLBindParameter(hstmt, 7, SQL_PARAM_INPUT, SQL_C_DOUBLE,         SQL_DECIMAL,               10, 2, &invoice_total,         0, NULL);
+        SQLBindParameter(hstmt, 2, SQL_PARAM_INPUT,  SQL_C_SLONG,          SQL_INTEGER,               0,  0, &customer_id,           0, NULL);
+        SQLBindParameter(hstmt, 3, SQL_PARAM_INPUT,  SQL_C_TYPE_TIMESTAMP, SQL_TYPE_TIMESTAMP,        0,  0, &invoice_date,          0, NULL);
+        SQLBindParameter(hstmt, 4, SQL_PARAM_INPUT,  SQL_C_CHAR,           SQL_VARCHAR,               20, 0, invoice_bankreference,  0, NULL);
+        SQLBindParameter(hstmt, 5, SQL_PARAM_INPUT,  SQL_C_DOUBLE,         SQL_DECIMAL,               10, 2, &invoice_subtotal,      0, NULL);
+        SQLBindParameter(hstmt, 6, SQL_PARAM_INPUT,  SQL_C_DOUBLE,         SQL_DECIMAL,               10, 2, &invoice_tax,           0, NULL);
+        SQLBindParameter(hstmt, 7, SQL_PARAM_INPUT,  SQL_C_DOUBLE,         SQL_DECIMAL,               10, 2, &invoice_total,         0, NULL);
 
         // Prepare the SQL statement
         ret = SQLPrepare(hstmt, query, SQL_NTS);
@@ -571,15 +570,21 @@ void addCustomer(
 }
 
 
+void DisplayError(SQLCHAR* sqlState, SQLINTEGER nativeError, SQLCHAR* message, SQLSMALLINT msgLen) {
+    printf("SQLSTATE: %s\n", sqlState);
+    printf("Native Error Code: %d\n", nativeError);
+    printf("Error Message: %.*s\n", msgLen, message);
+}
+
 /**
 *
 */
-void getCustomer(_In_ int customer_id, _Out_ int* customer_data) /*cJSON**/
+void getCustomer(_In_ int customer_id, _Out_ cJSON** customer_data)
 {
     char fileName[21] = "connectionstring.txt";
     DBERROR* err = NULL;
     dbOpen(fileName, &err);
-    *customer_data = 1;
+    *customer_data = NULL;
 
     if (err->errorCode < 0)
     {
@@ -592,19 +597,16 @@ void getCustomer(_In_ int customer_id, _Out_ int* customer_data) /*cJSON**/
     char query[1024];
     size_t bufferCount = 1024;
     sprintf_s(query, bufferCount,
-        "{? = CALL dbo.GetCustomer (?)}");
+        "{CALL dbo.GetCustomer (?)}");
 
     SQLHSTMT hstmt;
     SQLINTEGER id;
-
-    char* customer_data_char = NULL;
 
     if (SQL_SUCCEEDED(ret)) 
     {
         SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
 
-        SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER, 0, 0, &customer_id, 0, NULL);
-        SQLBindParameter(hstmt, 2, SQL_PARAM_OUTPUT, SQL_C_CHAR, SQL_VARCHAR, 100, 0, customer_data_char, 100, NULL);
+        SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER,   0, 0, &customer_id,       0, NULL);
 
         // Prepare the SQL statement
         ret = SQLPrepare(hstmt, query, SQL_NTS);
@@ -612,20 +614,66 @@ void getCustomer(_In_ int customer_id, _Out_ int* customer_data) /*cJSON**/
         {
             // Execute the query
             ret = SQLExecute(hstmt);
-            if (SQL_SUCCEEDED(ret))
+            // Check for success or info
+            if (ret == SQL_SUCCESS_WITH_INFO || ret == SQL_ERROR)
             {
-                if (SQLMoreResults(hstmt) == SQL_NO_DATA)
+                SQLLEN numRecs = 0;
+                SQLGetDiagField(SQL_HANDLE_STMT, hstmt, 0, SQL_DIAG_NUMBER, &numRecs, 0, 0);
+
+                // Retrieve diagnostic records
+                for (SQLSMALLINT i = 1; i <= numRecs; ++i)
                 {
-                    //printf("%d", id);
-                    //*customer_id = id;
+                    SQLCHAR sqlState[6];
+                    SQLINTEGER nativeError;
+                    SQLCHAR errorMsg[SQL_MAX_MESSAGE_LENGTH];
+                    SQLSMALLINT msgLen;
+
+                    ret = SQLGetDiagRec(SQL_HANDLE_STMT, hstmt, i, sqlState, &nativeError, errorMsg, sizeof(errorMsg), &msgLen);
+                    if (ret != SQL_NO_DATA) {
+                        DisplayError(sqlState, nativeError, errorMsg, msgLen);
                 }
             }
-            // Free the statement handle
-            SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
+                if (ret = SQL_ERROR)
+                    goto exit;
         }
 
-    }
+            *customer_data = cJSON_CreateObject();
 
+            // Fetch results
+            while (SQLFetch(hstmt) == SQL_SUCCESS) 
+            {
+                SQLCHAR customer_first_name[256];
+                SQLCHAR customer_last_name[256];
+                SQLCHAR customer_address[256];
+                SQLCHAR customer_zip[256];
+                SQLCHAR customer_city[256];
+                SQLLEN len_customer_first_name;
+                SQLLEN len_customer_last_name;
+                SQLLEN len_customer_address;
+                SQLLEN len_customer_zip;
+                SQLLEN len_customer_city;
+
+                ret = SQLGetData(hstmt, 2, SQL_C_CHAR, customer_first_name, sizeof(customer_first_name), &len_customer_first_name);
+                ret = SQLGetData(hstmt, 3, SQL_C_CHAR, customer_last_name, sizeof(customer_last_name), &len_customer_last_name);
+                ret = SQLGetData(hstmt, 4, SQL_C_CHAR, customer_address, sizeof(customer_address), &len_customer_address);
+                ret = SQLGetData(hstmt, 5, SQL_C_CHAR, customer_zip, sizeof(customer_zip), &len_customer_zip);
+                ret = SQLGetData(hstmt, 6, SQL_C_CHAR, customer_city, sizeof(customer_city), &len_customer_city);
+
+                if (SQL_SUCCEEDED(ret)) {
+                    printf("Customer Name: %s\n", customer_first_name);
+                    cJSON_AddNumberToObject(*customer_data, "customer_id", customer_id);
+                    cJSON_AddItemToObject(*customer_data, "customer_first_name", cJSON_CreateString(customer_first_name));
+                    cJSON_AddItemToObject(*customer_data, "customer_last_name", cJSON_CreateString(customer_last_name));
+                    cJSON_AddItemToObject(*customer_data, "customer_address", cJSON_CreateString(customer_address));
+                    cJSON_AddItemToObject(*customer_data, "customer_zip", cJSON_CreateString(customer_zip));
+                    cJSON_AddItemToObject(*customer_data, "customer_city", cJSON_CreateString(customer_city));
+                }
+            }
+        }
+    }
+exit:
+    // Free the statement handle
+    SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
     dbClose();
 }
 
@@ -654,53 +702,15 @@ void createTables()
     SQLHSTMT hstmt;
     ret = SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
 
-    if (ret != SQL_SUCCESS && ret != SQL_SUCCESS_WITH_INFO) {
-        // Handle error
-        // ...
-
-    }
-    else {
+    if (SQL_SUCCEEDED(ret)) {
         ret = SQLPrepare(hstmt, storedProcedureCall, SQL_NTS);
 
-        if (ret != SQL_SUCCESS && ret != SQL_SUCCESS_WITH_INFO) {
-            // Handle error
-            // ...
-
+        if (SQL_SUCCEEDED(ret))
+        {
+            ret = SQLExecute(hstmt);
         }
-        else {
-
-            if (ret != SQL_SUCCESS && ret != SQL_SUCCESS_WITH_INFO) {
-                // Handle error
-                // ...
-
-            }
-            else {
-                // Execute the stored procedure
-                //SQLINTEGER registerValue = 0;
-                //SQLBindCol(hstmt, 1, SQL_C_LONG, &registerValue, sizeof(registerValue), NULL);
-
-
-                ret = SQLExecute(hstmt);
-
-                if (ret != SQL_SUCCESS && ret != SQL_SUCCESS_WITH_INFO) {
-                    // Handle error
-                    // ...
-
                 }
-                else {
-                    // Process the results if applicable
-                    // ...
-                    //while (SQLFetch(hstmt) == SQL_SUCCESS) {
-                    //    printf("Register Value: %d\n", registerValue);
-                    //}
-                    //SQLBindCol(hstmt, columnNumber, valueType, targetValue, bufferLength, indicatorValue);
-
-                    // Close the statement when done
                     SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
-                }
-            }
-        }
-    }
     dbClose();
 }
 

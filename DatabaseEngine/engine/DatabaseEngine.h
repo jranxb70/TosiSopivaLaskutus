@@ -1,15 +1,14 @@
 #ifndef DATABASE_ENGINE_H
 #define DATABASE_ENGINE_H
 
-#include "DBEngineLibraryExports.h"
-#include "SqlErrorUtil.h"
-//#include "cJSON.h"
-
 #include <Windows.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sql.h>
 #include <sqlext.h>
+#include "DBEngineLibraryExports.h"
+#include "SqlErrorUtil.h"
+#include "cJSON.h"
 
 #define ERROR_INITIAL                        0
 #define ERROR_CODE                          -1
@@ -51,7 +50,7 @@ extern "C" {
 
 	void DB_ENGINE_LIBRARY_EXPORT getCustomer(
 		_In_ int					customer_id,
-		_Out_ int* customer_data); /*cJSON**/ 
+		_Out_ cJSON**				customer_data);
 
 	int DB_ENGINE_LIBRARY_EXPORT  free_json_data();
 

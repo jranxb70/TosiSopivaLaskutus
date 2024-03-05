@@ -45,9 +45,7 @@ int main(int argc, char *argv[])
     int quantity3 = 6;
     double price3 = 2.04;
 
-    int h = 0;
-    int* customer_data = NULL;
-    customer_data = &h;
+    cJSON* customer_data = NULL;
     getCustomer(1, &customer_data);
 
     //addCustomer(firstName, lastName, address, zip, city, &customer_id);
@@ -84,11 +82,23 @@ int main(int argc, char *argv[])
 
     char* invoice_date_str = "\"2017-01-10 17:00:05.00000\"";
 
-    snprintf(sample_json, sizeof(sample_json), "{\"customer_id\": %d, \"invoice_date\": %s, \"invoice_subtotal\": %lf, \"invoice_total\": %lf, \"invoice_tax\": %lf, \"bank_reference\" : \"10731\", \"invoice_lines\" : [{\"product_name\": \"kalja\", \"quantity\": 6, \"price\": 1.05}, {\"product_name\": \"siideri\", \"quantity\": 8, \"price\": 3.40}, {\"product_name\": \"lonkero\",\"quantity\": 12, \"price\": 2.25}]}", customer_id, invoice_date_str, invoice_subtotal, invoice_total, invoice_tax);
+    snprintf(sample_json, sizeof(sample_json), "{\"customer_id\": %d, \"invoice_date\": %s, \"invoice_subtotal\": %f, \
+                                                 \"invoice_total\": %f, \"invoice_tax\": %f, \"bank_reference\" : \"%s\", \
+                                                 \"invoice_lines\" : [{\"product_name\": \"s%\", \"quantity\": %d, \"price\": %f}, \
+                                                                      {\"product_name\": \"s%\", \"quantity\": %d, \"price\": %f}, \
+                                                                      {\"product_name\": \"s%\",\"quantity\": %d, \"price\": %f}]}", 
+                                                    customer_id, invoice_date_str, invoice_subtotal, invoice_total, invoice_tax, invoice_bankreference, 
+                                                    product, quantity, price, product2, quantity2, price2, product3, quantity3, price3);
 
     int len = strlen(sample_json);
 
+
     addNewInvoiceData(sample_json, len);
+
+    printf("%s", cJSON_Print(customer_data));
+
+    /* free all objects under root and root itself */
+    cJSON_Delete(customer_data);
 
     return 0;
 }

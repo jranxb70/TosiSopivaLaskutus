@@ -49,6 +49,11 @@ int main(int argc, char *argv[])
     int quantity3 = 6;
     double price3 = 2.04;
 
+    char* customer_data_1st = NULL;
+    int e = getCustomerCharOut(1, &customer_data_1st);
+
+    free(customer_data_1st);
+
     cJSON* customer_data = NULL;
     int err = getCustomer(1, &customer_data);
 

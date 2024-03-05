@@ -576,6 +576,16 @@ void DisplayError(SQLCHAR* sqlState, SQLINTEGER nativeError, SQLCHAR* message, S
     printf("Error Message: %.*s\n", msgLen, message);
 }
 
+int getCustomerCharOut(
+    _In_ int					customer_id,
+    _Out_ char**                customer_data)
+{
+    cJSON* customer_data_pointer = NULL;
+    int err = getCustomer(customer_id, &customer_data_pointer);
+    *customer_data = cJSON_Print(customer_data_pointer);
+    return err;
+}
+
 /**
 *
 */

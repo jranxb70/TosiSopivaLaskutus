@@ -54,6 +54,10 @@ extern "C" {
 		_In_ int					customer_id,
 		_Out_ cJSON**				customer_data);
 
+	int  DB_ENGINE_LIBRARY_EXPORT getCustomerCharOut(
+		_In_ int					customer_id,
+		_Out_ char**				customer_data);
+
 	int  DB_ENGINE_LIBRARY_EXPORT free_json_data();
 
 	void DB_ENGINE_LIBRARY_EXPORT free_sql_error_details();

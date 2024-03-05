@@ -579,7 +579,7 @@ void DisplayError(SQLCHAR* sqlState, SQLINTEGER nativeError, SQLCHAR* message, S
 /**
 *
 */
-void getCustomer(_In_ int customer_id, _Out_ cJSON** customer_data)
+int getCustomer(_In_ int customer_id, _Out_ cJSON** customer_data)
 {
     char fileName[21] = "connectionstring.txt";
     DBERROR* err = NULL;
@@ -631,11 +631,11 @@ void getCustomer(_In_ int customer_id, _Out_ cJSON** customer_data)
                     ret = SQLGetDiagRec(SQL_HANDLE_STMT, hstmt, i, sqlState, &nativeError, errorMsg, sizeof(errorMsg), &msgLen);
                     if (ret != SQL_NO_DATA) {
                         DisplayError(sqlState, nativeError, errorMsg, msgLen);
+                    }
                 }
-            }
                 if (ret = SQL_ERROR)
                     goto exit;
-        }
+            }
 
             *customer_data = cJSON_CreateObject();
 
@@ -653,20 +653,24 @@ void getCustomer(_In_ int customer_id, _Out_ cJSON** customer_data)
                 SQLLEN len_customer_zip;
                 SQLLEN len_customer_city;
 
-                ret = SQLGetData(hstmt, 2, SQL_C_CHAR, customer_first_name, sizeof(customer_first_name), &len_customer_first_name);
-                ret = SQLGetData(hstmt, 3, SQL_C_CHAR, customer_last_name, sizeof(customer_last_name), &len_customer_last_name);
-                ret = SQLGetData(hstmt, 4, SQL_C_CHAR, customer_address, sizeof(customer_address), &len_customer_address);
-                ret = SQLGetData(hstmt, 5, SQL_C_CHAR, customer_zip, sizeof(customer_zip), &len_customer_zip);
-                ret = SQLGetData(hstmt, 6, SQL_C_CHAR, customer_city, sizeof(customer_city), &len_customer_city);
+                int ret1 = SQLGetData(hstmt, 2, SQL_C_CHAR, customer_first_name, sizeof(customer_first_name), &len_customer_first_name);
+                int ret2 = SQLGetData(hstmt, 3, SQL_C_CHAR, customer_last_name, sizeof(customer_last_name), &len_customer_last_name);
+                int ret3 = SQLGetData(hstmt, 4, SQL_C_CHAR, customer_address, sizeof(customer_address), &len_customer_address);
+                int ret4 = SQLGetData(hstmt, 5, SQL_C_CHAR, customer_zip, sizeof(customer_zip), &len_customer_zip);
+                int ret5 = SQLGetData(hstmt, 6, SQL_C_CHAR, customer_city, sizeof(customer_city), &len_customer_city);
 
-                if (SQL_SUCCEEDED(ret)) {
-                    printf("Customer Name: %s\n", customer_first_name);
+                if (SQL_SUCCEEDED(ret1) && SQL_SUCCEEDED(ret2) && SQL_SUCCEEDED(ret3) && SQL_SUCCEEDED(ret4) && SQL_SUCCEEDED(ret5)) 
+                {
                     cJSON_AddNumberToObject(*customer_data, "customer_id", customer_id);
                     cJSON_AddItemToObject(*customer_data, "customer_first_name", cJSON_CreateString(customer_first_name));
                     cJSON_AddItemToObject(*customer_data, "customer_last_name", cJSON_CreateString(customer_last_name));
                     cJSON_AddItemToObject(*customer_data, "customer_address", cJSON_CreateString(customer_address));
                     cJSON_AddItemToObject(*customer_data, "customer_zip", cJSON_CreateString(customer_zip));
                     cJSON_AddItemToObject(*customer_data, "customer_city", cJSON_CreateString(customer_city));
+                }
+                else
+                {
+                    ret = -1;
                 }
             }
         }
@@ -675,6 +679,7 @@ exit:
     // Free the statement handle
     SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
     dbClose();
+    return ret;
 }
 
 
@@ -709,8 +714,8 @@ void createTables()
         {
             ret = SQLExecute(hstmt);
         }
-                }
-                    SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
+    }
+    SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
     dbClose();
 }
 

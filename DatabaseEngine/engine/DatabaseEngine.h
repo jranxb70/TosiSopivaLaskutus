@@ -34,7 +34,7 @@ typedef struct DBError {
 extern "C" {
 #endif
 
-	int DB_ENGINE_LIBRARY_EXPORT  addNewInvoiceData(
+	int  DB_ENGINE_LIBRARY_EXPORT addNewInvoiceData(
 		_In_ char*					invoicing_data_json, 
 		_In_ int					length);
 
@@ -48,11 +48,11 @@ extern "C" {
 		_In_ char*					customer_city,
 		_Out_ int*					customer_id);
 
-	void DB_ENGINE_LIBRARY_EXPORT getCustomer(
+	int  DB_ENGINE_LIBRARY_EXPORT getCustomer(
 		_In_ int					customer_id,
 		_Out_ cJSON**				customer_data);
 
-	int DB_ENGINE_LIBRARY_EXPORT  free_json_data();
+	int  DB_ENGINE_LIBRARY_EXPORT free_json_data();
 
 	void DB_ENGINE_LIBRARY_EXPORT free_sql_error_details();
 

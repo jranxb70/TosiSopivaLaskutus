@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
     double price3 = 2.04;
 
     cJSON* customer_data = NULL;
-    getCustomer(1, &customer_data);
+    int err = getCustomer(1, &customer_data);
 
     //addCustomer(firstName, lastName, address, zip, city, &customer_id);
 
@@ -80,13 +80,13 @@ int main(int argc, char *argv[])
 
     char sample_json[2048];
 
-    char* invoice_date_str = "\"2017-01-10 17:00:05.00000\"";
+    char* invoice_date_str = "2017-01-10 17:00:05.00000";
 
-    snprintf(sample_json, sizeof(sample_json), "{\"customer_id\": %d, \"invoice_date\": %s, \"invoice_subtotal\": %f, \
+    snprintf(sample_json, sizeof(sample_json), "{\"customer_id\": %d, \"invoice_date\": \"%s\", \"invoice_subtotal\": %f, \
                                                  \"invoice_total\": %f, \"invoice_tax\": %f, \"bank_reference\" : \"%s\", \
-                                                 \"invoice_lines\" : [{\"product_name\": \"s%\", \"quantity\": %d, \"price\": %f}, \
-                                                                      {\"product_name\": \"s%\", \"quantity\": %d, \"price\": %f}, \
-                                                                      {\"product_name\": \"s%\",\"quantity\": %d, \"price\": %f}]}", 
+                                                 \"invoice_lines\" : [{\"product_name\": \"%s\", \"quantity\": %d, \"price\": %f}, \
+                                                                      {\"product_name\": \"%s\", \"quantity\": %d, \"price\": %f}, \
+                                                                      {\"product_name\": \"%s\", \"quantity\": %d, \"price\": %f}]}", 
                                                     customer_id, invoice_date_str, invoice_subtotal, invoice_total, invoice_tax, invoice_bankreference, 
                                                     product, quantity, price, product2, quantity2, price2, product3, quantity3, price3);
 

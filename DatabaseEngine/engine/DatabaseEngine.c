@@ -589,7 +589,7 @@ int getCustomer(_In_ int customer_id, _Out_ cJSON** customer_data)
     if (err->errorCode < 0)
     {
         free(err);
-        return;
+        return -1;
     }
     int ret = err->errorCode;
     free(err);

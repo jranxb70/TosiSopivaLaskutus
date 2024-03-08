@@ -74,7 +74,7 @@ extern "C" {
 		_In_ int					invoiceline_quantity,
 		_In_ double					invoiceline_price);
 
-	void DB_ENGINE_LIBRARY_EXPORT addInvoice(
+	int DB_ENGINE_LIBRARY_EXPORT addInvoice(
 		_In_ bool                   open_database,
 		_In_ int					customer_id,
 		_In_ SQL_TIMESTAMP_STRUCT	invoice_date,
@@ -82,7 +82,8 @@ extern "C" {
 		_In_ double					invoice_subtotal,
 		_In_ double					invoice_tax,
 		_In_ double					invoice_total,
-		_Out_ int*					invoice_idOut);
+		_Out_ int*					invoice_idOut,
+		_Out_ node_t**				errorList);
 
 #ifdef __cplusplus
 }

@@ -148,6 +148,7 @@ int free_json_data(int selector) {
 void free_sql_error_details()
 {
     DeleteList(&s);
+    s = NULL;
 }
 
 /**
@@ -407,7 +408,7 @@ void addInvoiceLine(
 * @param invoice_total:
 * @param invoice_idOut:
 */
-void addInvoice(
+int addInvoice(
     _In_ bool                   open_database,
     _In_ int                    customer_id,
     _In_ SQL_TIMESTAMP_STRUCT   invoice_date,
@@ -415,8 +416,10 @@ void addInvoice(
     _In_ double                 invoice_subtotal,
     _In_ double                 invoice_tax,
     _In_ double                 invoice_total,
-    _Out_ int*                  invoice_idOut)
+    _Out_ int*                  invoice_idOut, 
+    _Out_ node_t**              errorList)
 {
+    int result_sql_sp_execute = -8;
     *invoice_idOut = 0;
 
     char fileName[21] = "connectionstring.txt";
@@ -430,7 +433,8 @@ void addInvoice(
         if (err->errorCode < 0)
         {
             free(err);
-        return;
+            ret = -1;
+            return ret;
         }
         ret = err->errorCode;
         free(err);
@@ -454,7 +458,7 @@ void addInvoice(
         SQLBindParameter(hstmt, 1, SQL_PARAM_OUTPUT, SQL_C_SLONG,          SQL_INTEGER,               0,  0, &id_invoice,            0, NULL);
         
         SQLBindParameter(hstmt, 2, SQL_PARAM_INPUT,  SQL_C_SLONG,          SQL_INTEGER,               0,  0, &customer_id,           0, NULL);
-        SQLBindParameter(hstmt, 3, SQL_PARAM_INPUT,  SQL_C_TYPE_TIMESTAMP, SQL_TYPE_TIMESTAMP,        0,  0, &invoice_date,          0, NULL);
+        SQLBindParameter(hstmt, 3, SQL_PARAM_INPUT,  SQL_C_TYPE_TIMESTAMP, SQL_TYPE_TIMESTAMP,        0,  7, &invoice_date,          0, NULL);
         SQLBindParameter(hstmt, 4, SQL_PARAM_INPUT,  SQL_C_CHAR,           SQL_VARCHAR,               20, 0, invoice_bankreference,  0, NULL);
         SQLBindParameter(hstmt, 5, SQL_PARAM_INPUT,  SQL_C_DOUBLE,         SQL_DECIMAL,               10, 2, &invoice_subtotal,      0, NULL);
         SQLBindParameter(hstmt, 6, SQL_PARAM_INPUT,  SQL_C_DOUBLE,         SQL_DECIMAL,               10, 2, &invoice_tax,           0, NULL);
@@ -467,6 +471,14 @@ void addInvoice(
             // Execute the query
             ret = SQLExecute(hstmt);
 
+            SQLErrorUtil(ret, hstmt, &s);
+
+            *errorList = s;
+
+            result_sql_sp_execute = -5;
+
+#ifdef _DEBUG
+
             SQLCHAR sqlstate[6];
             SQLINTEGER native_error;
             SQLCHAR message_text[SQL_MAX_MESSAGE_LENGTH];
@@ -474,12 +486,35 @@ void addInvoice(
 
             SQLRETURN retussi = SQLGetDiagRec(SQL_HANDLE_STMT, hstmt, 1, sqlstate, &native_error, message_text, sizeof(message_text), &text_length);
 
+            const char* file_path = "error_log.txt";
+
+            // Open the file for writing
+            FILE* file = fopen(file_path, "w");
+            if (!file) {
+                perror("Error opening file");
+                return -2;
+            }
+
+            // Write the error message to the file
+            fprintf(file, "SQL State: %s\n", sqlstate);
+            fprintf(file, "Native Error: %d\n", native_error);
+            fprintf(file, "Message Text: %.*s\n", text_length, message_text);
+
+            // Close the file
+            fclose(file);
+
+            printf("Error message saved to %s\n", file_path);
+
+#endif // _DEBUG
+
             if (SQL_SUCCEEDED(ret))
             {
+                result_sql_sp_execute = -3;
                 if (SQLMoreResults(hstmt) == SQL_NO_DATA)
                 {
                     printf("%d", id_invoice);
                     *invoice_idOut = id_invoice;
+                    result_sql_sp_execute = 0;
                 }
             }
             // Free the statement handle
@@ -495,6 +530,7 @@ void addInvoice(
     {
         dbClose();
     }
+    return result_sql_sp_execute;
 }
 
 /**
@@ -744,6 +780,25 @@ void createTables()
 */
 int addNewInvoiceData(_In_ char* invoicing_data_json, _In_ int length)
 {
+#ifdef _DEBUG
+    const char* file_path = "invoice_data.json";
+
+    // Open the file for writing
+    FILE* file = fopen(file_path, "w");
+    if (!file) {
+        perror("Error opening file");
+        return 1;
+    }
+
+    // Write the JSON data to the file
+    fprintf(file, "%s\n", invoicing_data_json);
+
+    // Close the file
+    fclose(file);
+
+    printf("Data saved to %s\n", file_path);
+#endif // _DEBUG
+
     // Parse the JSON string
     cJSON* root = cJSON_Parse(invoicing_data_json);
 
@@ -803,7 +858,7 @@ int addNewInvoiceData(_In_ char* invoicing_data_json, _In_ int length)
             if (err->errorCode < 0)
             {
                 free(err);
-                return 0;
+                return -1;
             }
             ret = err->errorCode;
             free(err);
@@ -812,7 +867,9 @@ int addNewInvoiceData(_In_ char* invoicing_data_json, _In_ int length)
         SQL_TIMESTAMP_STRUCT myTimestamp;
         stringToTimestamp(invoice_date->valuestring, &myTimestamp);
 
-        addInvoice(
+        node_t* errs = NULL;
+
+        int val = addInvoice(
             _In_(bool)                     open_database,
             _In_(int)                      id->valueint,
             _In_                           myTimestamp,
@@ -820,7 +877,16 @@ int addNewInvoiceData(_In_ char* invoicing_data_json, _In_ int length)
             _In_(double)                   invoice_subtotal->valuedouble,
             _In_(double)                   invoice_tax->valuedouble,
             _In_(double)                   invoice_total->valuedouble,
-            _Out_(int*)                    &invoice_id);
+            _Out_(int*)                    &invoice_id, 
+                                           &errs);
+
+        if (errs != NULL)
+        {
+            cJSON_Delete(root);
+            free_sql_error_details();
+            return val;
+        }
+        free_sql_error_details();
 
         cJSON* invoiceLines =       cJSON_GetObjectItem(root, "invoice_lines");
 

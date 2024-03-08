@@ -17,13 +17,16 @@ void save_to_file(
 	const char*					filename);
 
 _Success_(return == 0)
-int getWorkingDir(
+DB_ENGINE_LIBRARY_EXPORT int getWorkingDir(
 	_Out_   char**				pWorkingDir);
 
-int getConnectionString(
+DB_ENGINE_LIBRARY_EXPORT int getConnectionString(
 	_Inout_ char**				workingDirectory,
 	_In_	char*				fileName,
 	_Out_	char**				connectionString);
+
+DB_ENGINE_LIBRARY_EXPORT int freeGlobalVariable(
+	_In_	int					selector);
 
 int concatToJsonData(
 	_Inout_ char**				dest, 

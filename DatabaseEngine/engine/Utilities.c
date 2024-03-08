@@ -3,6 +3,9 @@
 #include <errno.h>
 #include "Utilities.h"
 
+char* globalWorkingDir = NULL;
+char* globalConnectionString = NULL;
+
 // Function to convert a string to SQL_TIMESTAMP_STRUCT
 int stringToTimestamp(const char* inputString, SQL_TIMESTAMP_STRUCT* timestamp) 
 {
@@ -103,6 +106,7 @@ int getWorkingDir(_Out_ char** pWorkingDir)
 #pragma warning( disable : 6387 )
 
     strcpy_s(*pWorkingDir, (count + 1), cwd);
+    globalWorkingDir = *pWorkingDir;
     return ret;
 
 #pragma warning( pop )
@@ -110,6 +114,32 @@ int getWorkingDir(_Out_ char** pWorkingDir)
     error:
     free(*pWorkingDir);
     return ret;
+}
+
+int freeGlobalVariable(_In_ int selector)
+{
+    int freedVariable = -1;
+    if (selector == 1)
+    {
+        if (globalWorkingDir)
+        {
+            free(globalWorkingDir);
+            globalWorkingDir = NULL;
+            freedVariable = selector;
+            return freedVariable;
+        }
+    }
+    else if (selector == 2)
+    {
+        if (globalConnectionString)
+        {
+            free(globalConnectionString);
+            globalConnectionString = NULL;
+            freedVariable = selector;
+            return freedVariable;
+        }
+    }
+    return freedVariable;
 }
 
 /**
@@ -157,6 +187,7 @@ int getConnectionString(
         }
 
         *workingDirectory = temp;
+        globalWorkingDir = *workingDirectory;
         temp = NULL;
 
         s = strlen(*workingDirectory);
@@ -167,6 +198,7 @@ int getConnectionString(
     }
 
     readFile(workingDirectory, connectionString);
+    globalConnectionString = *connectionString;
 
     return ret;
 

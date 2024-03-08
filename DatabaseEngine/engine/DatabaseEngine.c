@@ -1,3 +1,4 @@
+#include <time.h>
 #include "DatabaseEngine.h"
 #include "Utilities.h"
 
@@ -478,11 +479,19 @@ int addInvoice(
             result_sql_sp_execute = -5;
 
 #ifdef _DEBUG
+            time_t current_time;
+            time(&current_time);
 
-            SQLCHAR sqlstate[6];
-            SQLINTEGER native_error;
-            SQLCHAR message_text[SQL_MAX_MESSAGE_LENGTH];
-            SQLSMALLINT text_length;
+            struct tm* time_info;
+            time_info = localtime(&current_time);
+
+            char timeString[20]; // Space for "HH:MM:SS\0"
+            strftime(timeString, sizeof(timeString), "%Y-%m-%d %H:%M:%S", time_info);
+
+            SQLCHAR sqlstate[6] = "";
+            SQLINTEGER native_error = 0;
+            SQLCHAR message_text[SQL_MAX_MESSAGE_LENGTH] = "";
+            SQLSMALLINT text_length = 0;;
 
             SQLRETURN retussi = SQLGetDiagRec(SQL_HANDLE_STMT, hstmt, 1, sqlstate, &native_error, message_text, sizeof(message_text), &text_length);
 
@@ -496,6 +505,7 @@ int addInvoice(
             }
 
             // Write the error message to the file
+            fprintf(file, "Observation time: %s\n", timeString);
             fprintf(file, "SQL State: %s\n", sqlstate);
             fprintf(file, "Native Error: %d\n", native_error);
             fprintf(file, "Message Text: %.*s\n", text_length, message_text);

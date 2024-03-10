@@ -26,12 +26,20 @@ unsigned long roundToNextHundreds(unsigned long num)
     unsigned long lastTwoDigits = num % 100;
 
     // Check if the last two digits are nonzero
-    if (lastTwoDigits != 0) {
+    if (lastTwoDigits != 0) 
+    {
+        if (!(lastTwoDigits < 50))
+        {
         // Calculate the amount needed to reach the next full hundreds
         unsigned long increment = 100 - lastTwoDigits;
 
         // Round up to the next full hundreds
         num += increment;
+    }
+        else
+        {
+            num -= lastTwoDigits;
+        }
     }
 
     return num;

@@ -27,6 +27,7 @@ enum FailedFunction { ErrFuncNone = 0, ErrFuncSQLAllocHandleA, ErrFuncSQLSetEnvA
 typedef struct DBError {
 	enum FailedFunction failedFunction;
 	SQLRETURN			errorCode;
+	int                 errorInt;
 
 } DBERROR;
 

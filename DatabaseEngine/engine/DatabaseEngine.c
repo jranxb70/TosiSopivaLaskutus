@@ -41,6 +41,7 @@ void dbOpen(
     *dbErr = (DBERROR*)malloc(sizeof(DBERROR));
 
     (*dbErr)->errorCode = 0;
+    (*dbErr)->errorInt = 0;
     (*dbErr)->failedFunction = ErrFuncNone;
 
     // Allocate an environment handle
@@ -75,14 +76,14 @@ void dbOpen(
 
     if (-1 == (err = getWorkingDir(&workingDirectory)))
     {
-        (*dbErr)->errorCode = ERROR_WORKING_DIRECTORY_ERROR;
+        (*dbErr)->errorInt = ERROR_WORKING_DIRECTORY_ERROR;
         (*dbErr)->failedFunction = ErrFunc_getWorkingDirA;
         goto error;
     }
 
     if (-1 == (err = getConnectionString(&workingDirectory, fileName, &connectionStringW)))
     {
-        (*dbErr)->errorCode = ERROR_CONNECTION_STRING_UNAVAILABLE;
+        (*dbErr)->errorInt = ERROR_CONNECTION_STRING_UNAVAILABLE;
         (*dbErr)->failedFunction = ErrFunc_getConnectionStringA;
         goto error;
     }
@@ -656,8 +657,15 @@ int getCustomer(_In_ int customer_id, _Out_ cJSON** customer_data)
 
     if (err->errorCode < 0)
     {
+        int errValueSQL = (int)err->errorCode;
         free(err);
-        return err->errorCode;
+        return errValueSQL;
+    }
+    else if (err->errorInt < 0)
+    {
+        int errValue = err->errorInt;
+        free(err);
+        return errValue;
     }
     int ret = err->errorCode;
     free(err);

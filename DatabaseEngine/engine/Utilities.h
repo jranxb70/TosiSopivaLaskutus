@@ -11,6 +11,7 @@
 #define ERROR_UTILITY -10
 #define ERROR_REALLOC_FAILED -11
 
+unsigned long roundToNextHundreds(unsigned long num);
 
 void save_to_file(
 	const char*					content, 

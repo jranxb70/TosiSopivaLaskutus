@@ -12,7 +12,8 @@
 
 #define ERROR_INITIAL                        0
 #define ERROR_CODE                          -1
-#define ERROR_CONNECTION_STRING_UNAVAILABLE -2
+#define ERROR_CONNECTION_STRING_UNAVAILABLE -8
+#define ERROR_WORKING_DIRECTORY_ERROR       -9
 #define ERROR_DBOPEN_FAILED                 -3
 
 #define true 1
@@ -21,7 +22,7 @@
 
 node_t* s = NULL;
 
-enum FailedFunction { ErrFuncNone = 0, ErrFuncSQLAllocHandleA, ErrFuncSQLSetEnvAttrA, ErrFuncSQLAllocHandleB, ErrFuncSQLDriverConnectA };
+enum FailedFunction { ErrFuncNone = 0, ErrFuncSQLAllocHandleA, ErrFuncSQLSetEnvAttrA, ErrFuncSQLAllocHandleB, ErrFuncSQLDriverConnectA, ErrFunc_getConnectionStringA, ErrFunc_getWorkingDirA };
 
 typedef struct DBError {
 	enum FailedFunction failedFunction;

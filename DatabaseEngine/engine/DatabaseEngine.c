@@ -75,13 +75,15 @@ void dbOpen(
 
     if (-1 == (err = getWorkingDir(&workingDirectory)))
     {
-        //ret = ERROR_CODE;
+        (*dbErr)->errorCode = ERROR_WORKING_DIRECTORY_ERROR;
+        (*dbErr)->failedFunction = ErrFunc_getWorkingDirA;
         goto error;
     }
 
     if (-1 == (err = getConnectionString(&workingDirectory, fileName, &connectionStringW)))
     {
-        //ret = ERROR_CODE;
+        (*dbErr)->errorCode = ERROR_CONNECTION_STRING_UNAVAILABLE;
+        (*dbErr)->failedFunction = ErrFunc_getConnectionStringA;
         goto error;
     }
 
@@ -634,8 +636,11 @@ int getCustomerCharOut(
 {
     cJSON* customer_data_pointer = NULL;
     int err = getCustomer(customer_id, &customer_data_pointer);
+    if (!(err < 0))
+    {
     *customer_data = cJSON_Print(customer_data_pointer);
     json_data_char = *customer_data;
+    }
     return err;
 }
 
@@ -652,7 +657,7 @@ int getCustomer(_In_ int customer_id, _Out_ cJSON** customer_data)
     if (err->errorCode < 0)
     {
         free(err);
-        return -1;
+        return err->errorCode;
     }
     int ret = err->errorCode;
     free(err);

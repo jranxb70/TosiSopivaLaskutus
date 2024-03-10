@@ -6,6 +6,37 @@
 char* globalWorkingDir = NULL;
 char* globalConnectionString = NULL;
 
+unsigned long roundToNextHundreds(unsigned long num) 
+{
+
+    //for ()
+    // Convert the unsigned long to a string
+    char str[20]; // Adjust the size as needed
+    snprintf(str, sizeof(str), "%lu", num);
+    size_t s = strlen(str);
+
+    int denominator = 1000;
+
+    if (num % denominator == 0)
+    {
+        return num;
+    }
+
+    // Extract the last two digits
+    unsigned long lastTwoDigits = num % 100;
+
+    // Check if the last two digits are nonzero
+    if (lastTwoDigits != 0) {
+        // Calculate the amount needed to reach the next full hundreds
+        unsigned long increment = 100 - lastTwoDigits;
+
+        // Round up to the next full hundreds
+        num += increment;
+    }
+
+    return num;
+}
+
 // Function to convert a string to SQL_TIMESTAMP_STRUCT
 int stringToTimestamp(const char* inputString, SQL_TIMESTAMP_STRUCT* timestamp) 
 {
@@ -18,7 +49,15 @@ int stringToTimestamp(const char* inputString, SQL_TIMESTAMP_STRUCT* timestamp)
     timestamp->hour = hour;
     timestamp->minute = minute;
     timestamp->second = second;
-    timestamp->fraction = f; // Set fractional seconds
+    if (f > 0)
+    {
+    long rounded_f = roundToNextHundreds(f);
+    timestamp->fraction = rounded_f; // Set fractional seconds
+    }
+    else
+    {
+        timestamp->fraction = f;
+    }
     return result;
 }
 
@@ -197,7 +236,7 @@ int getConnectionString(
         strcat_s(*workingDirectory, s + ss + 1, fileName);
     }
 
-    readFile(workingDirectory, connectionString);
+    ret = readFile(workingDirectory, connectionString);
     globalConnectionString = *connectionString;
 
     return ret;

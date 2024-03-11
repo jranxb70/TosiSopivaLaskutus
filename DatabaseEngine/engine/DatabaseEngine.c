@@ -39,6 +39,11 @@ void dbOpen(
     int err = 0;
 
     *dbErr = (DBERROR*)malloc(sizeof(DBERROR));
+    if ((*dbErr) == NULL)
+    {
+        printf("Memory allocating error.");
+        return;
+    }
 
     (*dbErr)->errorCode = 0;
     (*dbErr)->errorInt = 0;
@@ -51,7 +56,7 @@ void dbOpen(
         SQLRETURN retHandle = SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &henv);
         (*dbErr)->errorCode = retHandle;
         (*dbErr)->failedFunction = ErrFuncSQLAllocHandleA;
-        goto error;
+        goto exit;
     }
 
     // Set the ODBC version
@@ -61,7 +66,7 @@ void dbOpen(
         SQLFreeHandle(SQL_HANDLE_ENV, henv);
         (*dbErr)->errorCode = retEnvAttr;
         (*dbErr)->failedFunction = ErrFuncSQLSetEnvAttrA;
-        goto error;
+        goto exit;
     }
 
     //// Allocate a connection handle
@@ -71,21 +76,23 @@ void dbOpen(
         SQLFreeHandle(SQL_HANDLE_ENV, henv);
         (*dbErr)->errorCode = retConHandle;
         (*dbErr)->failedFunction = ErrFuncSQLAllocHandleB;
-        goto error;
+        goto exit;
     }
 
     if (-1 == (err = getWorkingDir(&workingDirectory)))
     {
+        SQLFreeHandle(SQL_HANDLE_ENV, henv);
         (*dbErr)->errorInt = ERROR_WORKING_DIRECTORY_ERROR;
         (*dbErr)->failedFunction = ErrFunc_getWorkingDirA;
-        goto error;
+        goto exit;
     }
 
     if (-1 == (err = getConnectionString(&workingDirectory, fileName, &connectionStringW)))
     {
+        SQLFreeHandle(SQL_HANDLE_ENV, henv);
         (*dbErr)->errorInt = ERROR_CONNECTION_STRING_UNAVAILABLE;
         (*dbErr)->failedFunction = ErrFunc_getConnectionStringA;
-        goto error;
+        goto exit;
     }
 
     if (!!connectionStringW)
@@ -98,7 +105,7 @@ void dbOpen(
             SQLFreeHandle(SQL_HANDLE_ENV, henv);
             (*dbErr)->errorCode = retConnect;
             (*dbErr)->failedFunction = ErrFuncSQLDriverConnectA;
-            goto error;
+            goto exit;
         }
     }
     else
@@ -106,7 +113,7 @@ void dbOpen(
         printf("ERROR: The connection string is unavaible.");
     }
 
-error:
+exit:
     free(connectionStringW);
     free(workingDirectory);
 }
@@ -142,9 +149,19 @@ int free_json_data(int selector) {
     int done = 744;
 
     if (selector == 1)
+    {
         free(json_data);
+        json_data = NULL;
+    }
     else if (selector == 2)
+    {
         free(json_data_char);
+        json_data_char = NULL;
+    }
+    else
+    {
+        done = -123;
+    }
 
     return done;
 }
@@ -249,15 +266,19 @@ void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out
             {
                 // Process the invoice data
                 SQLINTEGER invoiceId;
+                SQLTIMESTAMP date;
+                SQLCHAR dateStr[64];
                 SQLCHAR bankReference[64];
                 while (SQLFetch(hstmt) == SQL_SUCCESS) 
                 {
                     SQLGetData(hstmt, 1, SQL_C_SLONG, &invoiceId, 0, NULL);
+                    SQLGetData(hstmt, 3, SQL_C_CHAR, dateStr, sizeof(dateStr), NULL); //invoice_date
                     SQLGetData(hstmt, 4, SQL_C_CHAR, bankReference, sizeof(bankReference), NULL);
                     printf("Invoice ID: %d, Bank Reference: %s\n", invoiceId, bankReference);
 
                     cJSON* invoice = cJSON_CreateObject();
                     cJSON_AddNumberToObject(invoice, "invoice_id", invoiceId);
+                    cJSON_AddStringToObject(invoice, "invoice_date", dateStr);
                     cJSON_AddStringToObject(invoice, "bank_reference", bankReference);
                     invoice_lines = cJSON_AddArrayToObject(invoice, "invoice_lines");
 

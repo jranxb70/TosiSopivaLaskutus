@@ -30,12 +30,12 @@ unsigned long roundToNextHundreds(unsigned long num)
     {
         if (!(lastTwoDigits < 50))
         {
-        // Calculate the amount needed to reach the next full hundreds
-        unsigned long increment = 100 - lastTwoDigits;
+            // Calculate the amount needed to reach the next full hundreds
+            unsigned long increment = 100 - lastTwoDigits;
 
-        // Round up to the next full hundreds
-        num += increment;
-    }
+            // Round up to the next full hundreds
+                num += increment;
+        }
         else
         {
             num -= lastTwoDigits;
@@ -59,8 +59,8 @@ int stringToTimestamp(const char* inputString, SQL_TIMESTAMP_STRUCT* timestamp)
     timestamp->second = second;
     if (f > 0)
     {
-    long rounded_f = roundToNextHundreds(f);
-    timestamp->fraction = rounded_f; // Set fractional seconds
+        long rounded_f = roundToNextHundreds(f);
+        timestamp->fraction = rounded_f; // Set fractional seconds
     }
     else
     {
@@ -158,7 +158,7 @@ int getWorkingDir(_Out_ char** pWorkingDir)
 
 #pragma warning( pop )
 
-    error:
+error:
     free(*pWorkingDir);
     return ret;
 }

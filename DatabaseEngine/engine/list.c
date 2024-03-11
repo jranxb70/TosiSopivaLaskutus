@@ -23,8 +23,15 @@ int Append(_Inout_ node_t** pHead, _In_ SQLERRORDETAILS* err_detail)
         if (node == NULL) {
             return 1;
         }
-        (node)->next->val = err_detail;
-        (node)->next->next = NULL;
+        if (!((node)->next == NULL))
+        {
+            (node)->next->val = err_detail;
+            (node)->next->next = NULL;
+        }
+        else
+        {
+            return 1;
+        }
     }
     return 0;
 }

@@ -266,14 +266,22 @@ void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out
             {
                 // Process the invoice data
                 SQLINTEGER invoiceId;
-                SQLTIMESTAMP date;
                 SQLCHAR dateStr[64];
                 SQLCHAR bankReference[64];
+
+                SQLDOUBLE invoice_subtotal;
+                SQLDOUBLE invoice_tax;
+                SQLDOUBLE invoice_total;
+
                 while (SQLFetch(hstmt) == SQL_SUCCESS) 
                 {
                     SQLGetData(hstmt, 1, SQL_C_SLONG, &invoiceId, 0, NULL);
-                    SQLGetData(hstmt, 3, SQL_C_CHAR, dateStr, sizeof(dateStr), NULL); //invoice_date
+                    SQLGetData(hstmt, 3, SQL_C_CHAR, dateStr, sizeof(dateStr), NULL); 
                     SQLGetData(hstmt, 4, SQL_C_CHAR, bankReference, sizeof(bankReference), NULL);
+
+                    SQLGetData(hstmt, 5, SQL_C_DOUBLE, &invoice_subtotal, 0, NULL);
+                    SQLGetData(hstmt, 6, SQL_C_DOUBLE, &invoice_tax, 0, NULL);
+                    SQLGetData(hstmt, 7, SQL_C_DOUBLE, &invoice_total, 0, NULL);
                     printf("Invoice ID: %d, Bank Reference: %s\n", invoiceId, bankReference);
 
                     cJSON* invoice = cJSON_CreateObject();

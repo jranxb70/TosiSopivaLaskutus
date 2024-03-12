@@ -168,8 +168,99 @@ int free_json_data(int selector) {
 
 void free_sql_error_details()
 {
-    DeleteList(&s);
-    s = NULL;
+    DeleteList(&internalErrorList);
+    internalErrorList = NULL;
+}
+
+void queryCustomers(_Out_ char** jsonString, _Out_ node_t** errorList)
+{
+    char fileName[21] = "connectionstring.txt";
+    DBERROR* err = NULL;
+    dbOpen(fileName, &err);
+
+    if (err->errorCode < 0)
+    {
+        free(err);
+        return;
+    }
+    free(err);
+    err = NULL;
+
+    SQLHSTMT hstmt;
+    SQLRETURN retcode;
+
+    // Allocate statement handle
+    retcode = SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
+
+    // Prepare stored procedure call
+    char call[256];
+    sprintf(call, "{call GetCustomers}");
+
+    // Execute stored procedure
+    retcode = SQLExecDirect(hstmt, (SQLCHAR*)call, SQL_NTS);
+
+    SQLErrorUtil(retcode, hstmt, &internalErrorList);
+
+    *errorList = internalErrorList;
+
+    root = cJSON_CreateObject();
+
+    cJSON_AddArrayToObject(root, "customers");
+
+    // Process the invoice data
+    SQLINTEGER  customerId;
+    SQLCHAR     firstName[64];
+    SQLCHAR     lastName[64];
+    SQLCHAR     address[64];
+    SQLCHAR     zip[64];
+    SQLCHAR     city[64];
+
+    while (SQLFetch(hstmt) == SQL_SUCCESS)
+    {
+        SQLGetData(hstmt, 1, SQL_C_SLONG, &customerId, 0, NULL);
+        SQLGetData(hstmt, 2, SQL_C_CHAR, firstName, sizeof(firstName), NULL);
+        SQLGetData(hstmt, 3, SQL_C_CHAR, lastName, sizeof(lastName), NULL);
+        SQLGetData(hstmt, 4, SQL_C_CHAR, address, sizeof(address), NULL);
+        SQLGetData(hstmt, 5, SQL_C_CHAR, zip, sizeof(zip), NULL);
+        SQLGetData(hstmt, 6, SQL_C_CHAR, city, sizeof(city), NULL);
+
+        printf("Customer ID: %d, First name: %s, Last name: %s, Address: %s, Address: %s, City: %s\n",
+            customerId,
+            firstName,
+            lastName,
+            address,
+            zip,
+            city);
+
+        cJSON* customer = NULL;
+        cJSON_CreateObject(customer);
+
+        cJSON_AddNumberToObject(root, "customer_id", customerId);
+        cJSON_AddStringToObject(root, "first_name", firstName);
+        cJSON_AddStringToObject(root, "last_name", lastName);
+        cJSON_AddStringToObject(root, "address", address);
+        cJSON_AddStringToObject(root, "zip", zip);
+        cJSON_AddStringToObject(root, "city", city);
+
+        cJSON* customer_array = NULL;
+        customer_array = cJSON_GetObjectItem(root, "customers");
+        cJSON_AddItemToArray(customer_array, customer);
+
+        //invoices = cJSON_AddArrayToObject(root, "invoices");
+}
+
+    char* archieCruzPlusIida = cJSON_Print(root);
+
+    printf("%s", archieCruzPlusIida);
+
+    *jsonString = archieCruzPlusIida;
+
+    cJSON_Delete(root);
+
+    // Free the statement handle
+    SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
+
+    dbClose();
 }
 
 /**
@@ -207,9 +298,9 @@ void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out
     // Execute stored procedure
     retcode = SQLExecDirect(hstmt, (SQLCHAR*)call, SQL_NTS);
 
-    SQLErrorUtil(retcode, hstmt, &s);
+    SQLErrorUtil(retcode, hstmt, &internalErrorList);
 
-    *errorList = s;
+    *errorList = internalErrorList;
 
     root = cJSON_CreateObject();
     cJSON* invoices = NULL;
@@ -288,6 +379,11 @@ void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out
                     cJSON_AddNumberToObject(invoice, "invoice_id", invoiceId);
                     cJSON_AddStringToObject(invoice, "invoice_date", dateStr);
                     cJSON_AddStringToObject(invoice, "bank_reference", bankReference);
+
+                    cJSON_AddNumberToObject(invoice, "invoice_subtotal", invoice_subtotal);
+                    cJSON_AddNumberToObject(invoice, "invoice_tax", invoice_tax);
+                    cJSON_AddNumberToObject(invoice, "invoice_total", invoice_total);
+
                     invoice_lines = cJSON_AddArrayToObject(invoice, "invoice_lines");
 
                     cJSON_AddItemToArray(invoices, invoice);
@@ -504,9 +600,9 @@ int addInvoice(
             // Execute the query
             ret = SQLExecute(hstmt);
 
-            SQLErrorUtil(ret, hstmt, &s);
+            SQLErrorUtil(ret, hstmt, &internalErrorList);
 
-            *errorList = s;
+            *errorList = internalErrorList;
 
             result_sql_sp_execute = -5;
 

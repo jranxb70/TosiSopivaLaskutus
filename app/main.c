@@ -15,6 +15,13 @@ int main(int argc, char *argv[])
         fprintf(stdout, "%s\n", "Insufficient input - enter a value.");
         return 1;
     }
+    char* jsonX = NULL;
+    node_t* errsX = NULL;
+    queryCustomers(&jsonX, &errsX);
+    int succeededX = free_json_data(1);
+    free_sql_error_details();
+
+    free(jsonX);
 
     printf("%s\n", argv[0]);
     printf("%s\n", argv[1]);

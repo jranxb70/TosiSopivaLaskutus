@@ -20,7 +20,7 @@
 #define false 0
 #define bool int
 
-node_t* s = NULL;
+node_t* internalErrorList = NULL;
 
 enum FailedFunction { ErrFuncNone = 0, ErrFuncSQLAllocHandleA, ErrFuncSQLSetEnvAttrA, ErrFuncSQLAllocHandleB, ErrFuncSQLDriverConnectA, ErrFunc_getConnectionStringA, ErrFunc_getWorkingDirA };
 
@@ -59,6 +59,10 @@ extern "C" {
 	int  DB_ENGINE_LIBRARY_EXPORT getCustomerCharOut(
 		_In_ int					customer_id,
 		_Out_ char**				customer_data);
+
+	void DB_ENGINE_LIBRARY_EXPORT queryCustomers(
+		_Out_ char**				jsonString, 
+		_Out_ node_t**				errorList);
 
 	int  DB_ENGINE_LIBRARY_EXPORT free_json_data(int selector);
 

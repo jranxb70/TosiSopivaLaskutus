@@ -235,12 +235,12 @@ void queryCustomers(_Out_ char** jsonString, _Out_ node_t** errorList)
         cJSON* customer = NULL;
         cJSON_CreateObject(customer);
 
-        cJSON_AddNumberToObject(root, "customer_id", customerId);
-        cJSON_AddStringToObject(root, "first_name", firstName);
-        cJSON_AddStringToObject(root, "last_name", lastName);
-        cJSON_AddStringToObject(root, "address", address);
-        cJSON_AddStringToObject(root, "zip", zip);
-        cJSON_AddStringToObject(root, "city", city);
+        cJSON_AddNumberToObject(customer, "customer_id", customerId);
+        cJSON_AddStringToObject(customer, "first_name", firstName);
+        cJSON_AddStringToObject(customer, "last_name", lastName);
+        cJSON_AddStringToObject(customer, "address", address);
+        cJSON_AddStringToObject(customer, "zip", zip);
+        cJSON_AddStringToObject(customer, "city", city);
 
         cJSON* customer_array = NULL;
         customer_array = cJSON_GetObjectItem(root, "customers");

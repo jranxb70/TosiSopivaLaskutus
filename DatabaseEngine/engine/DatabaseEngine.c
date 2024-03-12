@@ -244,9 +244,9 @@ void queryCustomers(_Out_ char** jsonString, _Out_ node_t** errorList)
 
         cJSON* customer_array = NULL;
         customer_array = cJSON_GetObjectItem(root, "customers");
-        cJSON_AddItemToArray(customer_array, customer);
-
-        //invoices = cJSON_AddArrayToObject(root, "invoices");
+        //cJSON_AddItemToArray(customer_array, customer);
+        cJSON_AddItemReferenceToArray(customer_array, customer);
+        //cJSON_Delete(customer);
 }
 
     char* archieCruzPlusIida = cJSON_Print(root);
@@ -386,7 +386,8 @@ void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out
 
                     invoice_lines = cJSON_AddArrayToObject(invoice, "invoice_lines");
 
-                    cJSON_AddItemToArray(invoices, invoice);
+                    cJSON_AddItemReferenceToArray(invoices, invoice);
+                    //cJSON_AddItemToArray(invoices, invoice);
                 }
             }
             else if (strcmp((char*)columnName, "invoice_line_id") == 0) 
@@ -419,7 +420,8 @@ void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out
                         if (invoiceId == (int) wtf)
                         {
                             cJSON* invoice_lines = cJSON_GetObjectItem(invoice, "invoice_lines");
-                            cJSON_AddItemToArray(invoice_lines, invoice_line);
+                            cJSON_AddItemReferenceToArray(invoice_lines, invoice_line);
+                            //cJSON_AddItemToArray(invoice_lines, invoice_line);
                             break;
                         }
                     }

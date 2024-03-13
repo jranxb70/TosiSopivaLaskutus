@@ -8,6 +8,19 @@
 #include "BankReferenceCalculator.h"
 
 
+void queryInvoiceByInvoiceId()
+{
+    char* jsonString = NULL;
+    int invoice_id = 1;
+    node_t* errs = NULL;
+    queryInvoiceById(invoice_id, &jsonString, &errs);
+    int succeeded = free_json_data(1);
+    free_sql_error_details();
+
+    free(jsonString);
+}
+
+
 int main(int argc, char *argv[])
 {
     if (argc < 2)
@@ -22,6 +35,9 @@ int main(int argc, char *argv[])
     free_sql_error_details();
 
     free(jsonX);
+
+    B();
+    queryInvoiceByInvoiceId();
 
     printf("%s\n", argv[0]);
     printf("%s\n", argv[1]);

@@ -1,0 +1,67 @@
+#include "DatabaseUtility.h"
+
+int fetchInvoiceLineDataAsJson(SQLHSTMT* hstmtP, cJSON** rtt)
+{
+    SQLHSTMT hstmt = *hstmtP;
+    cJSON* root = *rtt;
+
+    SQLINTEGER lineId;
+    SQLINTEGER invoiceId;
+    SQLCHAR productName[64];
+    SQLINTEGER quantity;
+    SQLDOUBLE price;
+
+    while (SQLFetch(hstmt) == SQL_SUCCESS) 
+    {
+        char* a = cJSON_Print(root);
+        SQLGetData(hstmt, 1, SQL_C_SLONG, &lineId, 0, NULL);
+        SQLGetData(hstmt, 2, SQL_C_SLONG, &invoiceId, 0, NULL);
+        SQLGetData(hstmt, 3, SQL_C_CHAR, productName, sizeof(productName), NULL);
+
+
+        SQLGetData(hstmt, 4, SQL_C_SLONG, &quantity, 0, NULL);
+        SQLGetData(hstmt, 5, SQL_C_DOUBLE, &price, 0, NULL);
+
+        printf("  Line ID: %d, Product Name: %s\n", lineId, productName);
+
+        ///////////////////////////////////////////
+
+        cJSON* invoice_line = cJSON_CreateObject();
+        cJSON_AddNumberToObject(invoice_line, "invoice_line_id", lineId);
+        cJSON_AddStringToObject(invoice_line, "product_name", productName);
+
+        cJSON_AddNumberToObject(invoice_line, "quantity", quantity);
+        cJSON_AddNumberToObject(invoice_line, "price", price);
+
+        // If invoices is null we are (probably) dealing with queryInvoiceById
+        cJSON* invoices = cJSON_GetObjectItem(root, "invoices");
+        int arraySizeInvoices = -1;
+        cJSON* invoice_lines = NULL;
+        if (!invoices)
+        {
+            invoice_lines = cJSON_GetObjectItem(root, "invoice_lines");
+            cJSON_AddItemReferenceToArray(invoice_lines, invoice_line);
+        }
+        else
+        {
+            arraySizeInvoices = cJSON_GetArraySize(invoices);
+        }
+        //int arraySizeInvoices = cJSON_GetArraySize(invoices);
+
+        cJSON* invoice = NULL;
+        for (int ind = 0; ind < arraySizeInvoices; ind++)
+        {
+            invoice = cJSON_GetArrayItem(invoices, ind);
+            cJSON* it = cJSON_GetObjectItem(invoice, "invoice_id");
+            double wtf = cJSON_GetNumberValue(it);
+            if (invoiceId == (int)wtf)
+            {
+                cJSON* invoice_lines = cJSON_GetObjectItem(invoice, "invoice_lines");
+                cJSON_AddItemReferenceToArray(invoice_lines, invoice_line);
+                break;
+            }
+        }
+    }
+            //}
+    return 0;
+}

@@ -64,6 +64,11 @@ extern "C" {
 		_Out_ char**				jsonString, 
 		_Out_ node_t**				errorList);
 
+	void DB_ENGINE_LIBRARY_EXPORT queryInvoiceById(
+		_In_ int					invoice_id, 
+		_Out_ char**				jsonString, 
+		_Out_ node_t**				errorList);
+
 	int  DB_ENGINE_LIBRARY_EXPORT free_json_data(int selector);
 
 	void DB_ENGINE_LIBRARY_EXPORT free_sql_error_details();

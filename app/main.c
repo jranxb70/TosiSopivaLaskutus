@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
 
     free(jsonX);
 
-    B();
+
     queryInvoiceByInvoiceId();
 
     printf("%s\n", argv[0]);

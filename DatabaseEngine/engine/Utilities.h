@@ -75,12 +75,16 @@ int stringToTimestamp(
 	const char*					inputString, 
 	SQL_TIMESTAMP_STRUCT*		timestamp);
 
+int stringToDate(const char* inputString, SQL_DATE_STRUCT * invoiceDueDate);
+
 // Function declaration
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 	DB_ENGINE_LIBRARY_EXPORT char* convertTimestampToString(const SQL_TIMESTAMP_STRUCT* timestamp);
+
+	DB_ENGINE_LIBRARY_EXPORT char* calculateInvoiceDueDate(const SQL_TIMESTAMP_STRUCT* timestamp);
 
 #ifdef __cplusplus
 }

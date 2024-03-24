@@ -80,19 +80,22 @@ extern "C" {
 
 	void DB_ENGINE_LIBRARY_EXPORT addInvoiceLine(
 		_In_ bool                   open_database,
-		_In_ int					invoice_id,
-		_In_ char*					invoiceline_product,
-		_In_ int					invoiceline_quantity,
-		_In_ double					invoiceline_price);
+		_In_ int                    invoice_id,
+		//_In_ char* invoiceline_product,
+		_In_ int                    product_item_id,
+		_In_ int                    invoiceline_quantity,
+		_In_ double                 invoiceline_price,
+		_In_ char*					product_description);
 
 	int DB_ENGINE_LIBRARY_EXPORT addInvoice(
 		_In_ bool                   open_database,
-		_In_ int					customer_id,
-		_In_ SQL_TIMESTAMP_STRUCT	invoice_date,
+		_In_ int                    customer_id,
+		_In_ SQL_TIMESTAMP_STRUCT   invoice_date,
 		_In_ char*					invoice_bankreference,
-		_In_ double					invoice_subtotal,
-		_In_ double					invoice_tax,
-		_In_ double					invoice_total,
+		_In_ double                 invoice_subtotal,
+		_In_ double                 invoice_tax,
+		_In_ double                 invoice_total,
+		_In_ SQL_DATE_STRUCT        invoice_due_date,
 		_Out_ int*					invoice_idOut,
 		_Out_ node_t**				errorList);
 

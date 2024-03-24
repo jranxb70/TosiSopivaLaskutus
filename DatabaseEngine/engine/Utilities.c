@@ -45,6 +45,16 @@ unsigned long roundToNextHundreds(unsigned long num)
     return num;
 }
 
+int stringToDate(const char* inputString, SQL_DATE_STRUCT* invoiceDueDate) 
+{ 
+    int year, month, day;
+    int result = sscanf(inputString, "%d-%d-%d", &year, &month, &day);
+    invoiceDueDate->year = year;
+    invoiceDueDate->month = month;
+    invoiceDueDate->day = day;
+    return result; 
+}
+
 // Function to convert a string to SQL_TIMESTAMP_STRUCT
 int stringToTimestamp(const char* inputString, SQL_TIMESTAMP_STRUCT* timestamp) 
 {
@@ -67,6 +77,21 @@ int stringToTimestamp(const char* inputString, SQL_TIMESTAMP_STRUCT* timestamp)
         timestamp->fraction = f;
     }
     return result;
+}
+
+char* calculateInvoiceDueDate(const SQL_TIMESTAMP_STRUCT* timestamp)
+{
+    SQL_DATE_STRUCT due_date;
+    due_date.month = timestamp->month + 1;
+    due_date.year = timestamp->year;
+    due_date.day = timestamp->day;
+
+    char* formattedDueDate = (char*)malloc(20);
+    if (formattedDueDate)
+    {
+        sprintf(formattedDueDate, "%04d-%02d-%02d", due_date.year, due_date.month, due_date.day);
+    }
+    return formattedDueDate;
 }
 
 char* convertTimestampToString(const SQL_TIMESTAMP_STRUCT* timestamp) 

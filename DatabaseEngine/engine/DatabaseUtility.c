@@ -7,31 +7,38 @@ int fetchInvoiceLineDataAsJson(SQLHSTMT* hstmtP, cJSON** rtt)
 
     SQLINTEGER lineId;
     SQLINTEGER invoiceId;
-    SQLCHAR productName[64];
+    //SQLCHAR productName[64];
+    SQLINTEGER productItemId;
     SQLINTEGER quantity;
     SQLDOUBLE price;
+
+    SQLCHAR productDescription[1024];
 
     while (SQLFetch(hstmt) == SQL_SUCCESS) 
     {
         char* a = cJSON_Print(root);
         SQLGetData(hstmt, 1, SQL_C_SLONG, &lineId, 0, NULL);
         SQLGetData(hstmt, 2, SQL_C_SLONG, &invoiceId, 0, NULL);
-        SQLGetData(hstmt, 3, SQL_C_CHAR, productName, sizeof(productName), NULL);
+        //SQLGetData(hstmt, 3, SQL_C_CHAR, productDescription, sizeof(productDescription), NULL);
+
+        SQLGetData(hstmt, 3, SQL_C_SLONG, &productItemId, 0, NULL);
 
 
         SQLGetData(hstmt, 4, SQL_C_SLONG, &quantity, 0, NULL);
         SQLGetData(hstmt, 5, SQL_C_DOUBLE, &price, 0, NULL);
 
-        printf("  Line ID: %d, Product Name: %s\n", lineId, productName);
+        SQLGetData(hstmt, 6, SQL_C_CHAR, productDescription, sizeof(productDescription), NULL);
 
         ///////////////////////////////////////////
 
         cJSON* invoice_line = cJSON_CreateObject();
         cJSON_AddNumberToObject(invoice_line, "invoice_line_id", lineId);
-        cJSON_AddStringToObject(invoice_line, "product_name", productName);
+        cJSON_AddNumberToObject(invoice_line, "product_item_id", productItemId);
 
         cJSON_AddNumberToObject(invoice_line, "quantity", quantity);
         cJSON_AddNumberToObject(invoice_line, "price", price);
+
+        cJSON_AddStringToObject(invoice_line, "product_description", productDescription);
 
         // If invoices is null we are (probably) dealing with queryInvoiceById
         cJSON* invoices = cJSON_GetObjectItem(root, "invoices");

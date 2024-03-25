@@ -5,7 +5,7 @@ message("Running CMakeLists.txt for databaseengine...")
 # recommends explicitly listing each source. We'll do that for the advanced subfolder.
 file(GLOB ENGINE_HEADERS "*.h")
 set(ENGINE_SOURCES  "engine/DatabaseEngine.h" 
-                    "engine/DatabaseEngine.c" 
+                    "engine/DatabaseEngine.c"
                     "engine/DatabaseUtility.h" 
                     "engine/DatabaseUtility.c" 
                     "engine/Utilities.h" 

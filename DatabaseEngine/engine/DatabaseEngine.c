@@ -12,6 +12,18 @@ cJSON* root = NULL;
 #define SQL_RESULT_LEN       240
 #define SQL_RETURN_CODE_LEN 1000
 
+#define LEN_FIRST_NAME      51
+#define LEN_LAST_NAME       51
+#define LEN_ADDRESS         101
+#define LEN_ZIP             6
+#define LEN_CITY            51 
+#define LEN_PHONE           21
+#define LEN_EMAIL           101
+#define LEN_BANK_REF        21
+#define LEN_DATE            31
+#define LEN_DUE_DATE        21
+#define LEN_DESCRIPTION     1025
+
 SQLHENV henv;  // Environment handle
 SQLHDBC hdbc;  // Connection handle
 
@@ -209,14 +221,13 @@ void queryCustomers(_Out_ char** jsonString, _Out_ node_t** errorList)
 
     // Process the invoice data
     SQLINTEGER  customerId;
-    SQLCHAR     firstName[50];
-    SQLCHAR     lastName[50];
-    SQLCHAR     address[100];
-    SQLCHAR     zip[5];
-    SQLCHAR     city[50];
-
-    SQLCHAR     phone[20];
-    SQLCHAR     email[100];
+    SQLCHAR     firstName[LEN_FIRST_NAME];
+    SQLCHAR     lastName[LEN_LAST_NAME];
+    SQLCHAR     address[LEN_ADDRESS];
+    SQLCHAR     zip[LEN_ZIP];
+    SQLCHAR     city[LEN_CITY];
+    SQLCHAR     phone[LEN_PHONE];
+    SQLCHAR     email[LEN_EMAIL];
 
     while (SQLFetch(hstmt) == SQL_SUCCESS)
     {
@@ -310,23 +321,22 @@ void queryInvoiceById(_In_ int invoice_id, _Out_ char** jsonString, _Out_ node_t
             {
                 // Process the invoice data
                 SQLINTEGER  customerId;
-                SQLCHAR     firstName[50];
-                SQLCHAR     lastName[50];
-                SQLCHAR     address[100];
-                SQLCHAR     zip[5];
-                SQLCHAR     city[50];
-
-                SQLCHAR     phone[20];
-                SQLCHAR     email[100];
+                SQLCHAR     firstName[LEN_FIRST_NAME];
+                SQLCHAR     lastName[LEN_LAST_NAME];
+                SQLCHAR     address[LEN_ADDRESS];
+                SQLCHAR     zip[LEN_ZIP];
+                SQLCHAR     city[LEN_CITY];
+                SQLCHAR     phone[LEN_PHONE];
+                SQLCHAR     email[LEN_EMAIL];
 
                 SQLINTEGER  invoiceId;
-                SQLCHAR     date[30];
-                SQLCHAR     invoice_bank_reference[20];
+                SQLCHAR     date[LEN_DATE];
+                SQLCHAR     invoice_bank_reference[LEN_BANK_REF];
                 SQLDOUBLE   invoice_subtotal;
                 SQLDOUBLE   invoice_tax;
                 SQLDOUBLE   invoice_total;
 
-                SQLCHAR     invoice_due_date[20];
+                SQLCHAR     invoice_due_date[LEN_DUE_DATE];
 
                 while (SQLFetch(hstmt) == SQL_SUCCESS)
                 {
@@ -460,11 +470,13 @@ void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out
             {
                 // Process the invoice data
                 SQLINTEGER  customerId;
-                SQLCHAR     firstName[64];
-                SQLCHAR     lastName[64];
-                SQLCHAR     address[64];
-                SQLCHAR     zip[64];
-                SQLCHAR     city[64];
+                SQLCHAR     firstName[LEN_FIRST_NAME];
+                SQLCHAR     lastName[LEN_LAST_NAME];
+                SQLCHAR     address[LEN_ADDRESS];
+                SQLCHAR     zip[LEN_ZIP];
+                SQLCHAR     city[LEN_CITY];
+                SQLCHAR     phone[LEN_PHONE];
+                SQLCHAR     email[LEN_EMAIL];
 
                 while (SQLFetch(hstmt) == SQL_SUCCESS) 
                 {
@@ -474,6 +486,8 @@ void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out
                     SQLGetData(hstmt, 4, SQL_C_CHAR,    address,        sizeof(address),        NULL);
                     SQLGetData(hstmt, 5, SQL_C_CHAR,    zip,            sizeof(zip),            NULL);
                     SQLGetData(hstmt, 6, SQL_C_CHAR,    city,           sizeof(city),           NULL);
+                    SQLGetData(hstmt, 7, SQL_C_CHAR,    phone,          sizeof(phone),          NULL);
+                    SQLGetData(hstmt, 8, SQL_C_CHAR,    email,          sizeof(email),          NULL);
 
                     printf("Customer ID: %d, First name: %s, Last name: %s, Address: %s, Address: %s, City: %s\n", 
                             customerId,
@@ -490,6 +504,9 @@ void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out
                     cJSON_AddStringToObject(root, "zip", zip);
                     cJSON_AddStringToObject(root, "city", city);
 
+                    cJSON_AddStringToObject(root, "phone", phone);
+                    cJSON_AddStringToObject(root, "email",email);
+
                     invoices = cJSON_AddArrayToObject(root, "invoices");
                 }
             }
@@ -497,12 +514,14 @@ void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out
             {
                 // Process the invoice data
                 SQLINTEGER invoiceId;
-                SQLCHAR dateStr[64];
-                SQLCHAR bankReference[64];
+                SQLCHAR dateStr[LEN_DATE];
+                SQLCHAR bankReference[LEN_BANK_REF];
 
                 SQLDOUBLE invoice_subtotal;
                 SQLDOUBLE invoice_tax;
                 SQLDOUBLE invoice_total;
+
+                SQLCHAR     invoice_due_date[LEN_DUE_DATE];
 
                 while (SQLFetch(hstmt) == SQL_SUCCESS) 
                 {
@@ -513,6 +532,9 @@ void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out
                     SQLGetData(hstmt, 5, SQL_C_DOUBLE, &invoice_subtotal, 0, NULL);
                     SQLGetData(hstmt, 6, SQL_C_DOUBLE, &invoice_tax, 0, NULL);
                     SQLGetData(hstmt, 7, SQL_C_DOUBLE, &invoice_total, 0, NULL);
+
+                    SQLGetData(hstmt, 8, SQL_C_CHAR, invoice_due_date, sizeof(invoice_due_date), NULL);
+
                     printf("Invoice ID: %d, Bank Reference: %s\n", invoiceId, bankReference);
 
                     cJSON* invoice = cJSON_CreateObject();
@@ -523,6 +545,8 @@ void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out
                     cJSON_AddNumberToObject(invoice, "invoice_subtotal", invoice_subtotal);
                     cJSON_AddNumberToObject(invoice, "invoice_tax", invoice_tax);
                     cJSON_AddNumberToObject(invoice, "invoice_total", invoice_total);
+
+                    cJSON_AddStringToObject(invoice, "invoice_due_date", invoice_due_date);
 
                     invoice_lines = cJSON_AddArrayToObject(invoice, "invoice_lines");
 
@@ -599,7 +623,6 @@ void addInvoiceLine(
 
         SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER,   0, 0, &invoice_id,           0, NULL);
         SQLBindParameter(hstmt, 2, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER,   0, 0, &product_item_id,      0, NULL);
-        //SQLBindParameter(hstmt, 2, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR,   10, 0, invoiceline_product,   0, NULL);
         SQLBindParameter(hstmt, 3, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER,   0, 0, &invoiceline_quantity, 0, NULL);
         SQLBindParameter(hstmt, 4, SQL_PARAM_INPUT, SQL_C_DOUBLE, SQL_DECIMAL, 10, 2, &invoiceline_price,    0, NULL);
 
@@ -959,14 +982,13 @@ int getCustomer(_In_ int customer_id, _Out_ cJSON** customer_data)
             // Fetch results
             while (SQLFetch(hstmt) == SQL_SUCCESS) 
             {
-                SQLCHAR customer_first_name[50];
-                SQLCHAR customer_last_name[50];
-                SQLCHAR customer_address[100];
-                SQLCHAR customer_zip[5];
-                SQLCHAR customer_city[256];
-
-                SQLCHAR customer_phone[20];
-                SQLCHAR customer_email[100];
+                SQLCHAR customer_first_name[LEN_FIRST_NAME];
+                SQLCHAR customer_last_name[LEN_LAST_NAME];
+                SQLCHAR customer_address[LEN_ADDRESS];
+                SQLCHAR customer_zip[LEN_ZIP];
+                SQLCHAR customer_city[LEN_CITY];
+                SQLCHAR customer_phone[LEN_CITY];
+                SQLCHAR customer_email[LEN_EMAIL];
 
                 SQLLEN len_customer_first_name;
                 SQLLEN len_customer_last_name;

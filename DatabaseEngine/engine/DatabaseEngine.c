@@ -826,6 +826,8 @@ void addCustomer(
     _In_ char* customer_address,
     _In_ char* customer_zip,
     _In_ char* customer_city,
+    _In_ char* customer_phone,
+    _In_ char* customer_email,
     _Out_ int* customer_id)
 {
     *customer_id = 0;
@@ -845,7 +847,7 @@ void addCustomer(
     char query[1024];
     size_t bufferCount = 1024;     
     sprintf_s(query, bufferCount,
-        "{? = CALL dbo.AddCustomer (?, ?, ?, ?, ?)}");
+        "{? = CALL dbo.AddCustomer (?, ?, ?, ?, ?, ?, ?)}");
 
     SQLHSTMT hstmt;
     SQLINTEGER id;
@@ -860,6 +862,9 @@ void addCustomer(
         SQLBindParameter(hstmt, 4, SQL_PARAM_INPUT,  SQL_C_CHAR, SQL_VARCHAR, 100, 0, customer_address,   0, NULL);
         SQLBindParameter(hstmt, 5, SQL_PARAM_INPUT,  SQL_C_CHAR, SQL_VARCHAR, 100, 0, customer_zip,       0, NULL);
         SQLBindParameter(hstmt, 6, SQL_PARAM_INPUT,  SQL_C_CHAR, SQL_VARCHAR,  50, 0, customer_city,      0, NULL);
+
+        SQLBindParameter(hstmt, 7, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 20, 0, customer_phone, 0, NULL);
+        SQLBindParameter(hstmt, 8, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 100, 0, customer_email, 0, NULL);
 
         // Prepare the SQL statement
         ret = SQLPrepare(hstmt, query, SQL_NTS);

@@ -49,6 +49,9 @@ int main(int argc, char *argv[])
     char zip[50] = "60200";
     char city[50] = "Seinäjoki";
 
+    char phone[20] = "964-120089";
+    char email[100] = "testi.kommunisti@kommarit.fi";
+
     int customer_id = 1;
     int invoice_id = -1;
 
@@ -87,7 +90,7 @@ int main(int argc, char *argv[])
     cJSON* customer_data = NULL;
     int err = getCustomer(1, &customer_data);
 
-    //addCustomer(firstName, lastName, address, zip, city, &customer_id);
+    addCustomer(firstName, lastName, address, zip, city, phone, email, &customer_id);
 
     bankreference = bankreference + customer_id;
     int bankreferenceOut = 0;

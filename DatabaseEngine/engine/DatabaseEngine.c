@@ -238,8 +238,10 @@ void queryCustomers(_Out_ char** jsonString, _Out_ node_t** errorList)
         SQLGetData(hstmt, 5, SQL_C_CHAR, zip, sizeof(zip), NULL);
         SQLGetData(hstmt, 6, SQL_C_CHAR, city, sizeof(city), NULL);
 
-        SQLGetData(hstmt, 7, SQL_C_CHAR, phone, sizeof(phone), NULL);
-        SQLGetData(hstmt, 8, SQL_C_CHAR, email, sizeof(email), NULL);
+        SQLLEN phoneLen, emailLen;
+
+        SQLGetData(hstmt, 7, SQL_C_CHAR, phone, sizeof(phone), &phoneLen);
+        SQLGetData(hstmt, 8, SQL_C_CHAR, email, sizeof(email), &emailLen);
 
         cJSON* customer = cJSON_CreateObject();
 
@@ -250,8 +252,25 @@ void queryCustomers(_Out_ char** jsonString, _Out_ node_t** errorList)
         cJSON_AddStringToObject(customer, "zip", zip);
         cJSON_AddStringToObject(customer, "city", city);
 
+
+        // null email null phone situation
+
+        if (phoneLen == SQL_NULL_DATA) 
+        {
+            cJSON_AddStringToObject(customer, "phone", "N/A");
+        }
+        else
+        {
         cJSON_AddStringToObject(customer, "phone", phone);
+        }
+        if (emailLen == SQL_NULL_DATA)
+        {
+            cJSON_AddStringToObject(customer, "email", "N/A");
+        }
+        else
+        {
         cJSON_AddStringToObject(customer, "email", email);
+        }
 
         cJSON* customer_array = NULL;
         customer_array = cJSON_GetObjectItem(root, "customers");
@@ -347,8 +366,12 @@ void queryInvoiceById(_In_ int invoice_id, _Out_ char** jsonString, _Out_ node_t
                     SQLGetData(hstmt, 5, SQL_C_CHAR, zip, sizeof(zip), NULL);
                     SQLGetData(hstmt, 6, SQL_C_CHAR, city, sizeof(city), NULL);
 
-                    SQLGetData(hstmt, 7, SQL_C_CHAR, phone, sizeof(phone), NULL);
-                    SQLGetData(hstmt, 8, SQL_C_CHAR, email, sizeof(email), NULL);
+                    // SQLGetData(hstmt, 7, SQL_C_CHAR, phone, sizeof(phone), NULL);
+                    // SQLGetData(hstmt, 8, SQL_C_CHAR, email, sizeof(email), NULL);
+                    SQLLEN phoneLen, emailLen;
+
+                    SQLGetData(hstmt, 7, SQL_C_CHAR, phone, sizeof(phone), &phoneLen);
+                    SQLGetData(hstmt, 8, SQL_C_CHAR, email, sizeof(email), &emailLen);
 
                     SQLGetData(hstmt,  9, SQL_C_SLONG,  &invoiceId,                    0, NULL);
                     SQLGetData(hstmt,  10, SQL_C_CHAR,   date,               sizeof(date), NULL);
@@ -375,8 +398,25 @@ void queryInvoiceById(_In_ int invoice_id, _Out_ char** jsonString, _Out_ node_t
                     cJSON_AddStringToObject(root, "zip", zip);
                     cJSON_AddStringToObject(root, "city", city);
 
+
+                    // null email null phone situation
+
+                    if (phoneLen == SQL_NULL_DATA)
+                    {
+                        cJSON_AddStringToObject(root, "phone", "N/A");
+                    }
+                    else
+                    {
                     cJSON_AddStringToObject(root, "phone", phone);
+                    }
+                    if (emailLen == SQL_NULL_DATA)
+                    {
+                        cJSON_AddStringToObject(root, "email", "N/A");
+                    }
+                    else
+                    { 
                     cJSON_AddStringToObject(root, "email", email);
+                    }
 
                     cJSON_AddNumberToObject(root, "invoice_id", invoiceId);
                     cJSON_AddStringToObject(root, "invoice_date", date);
@@ -1022,8 +1062,24 @@ int getCustomer(_In_ int customer_id, _Out_ cJSON** customer_data)
                     cJSON_AddItemToObject(*customer_data, "customer_zip", cJSON_CreateString(customer_zip));
                     cJSON_AddItemToObject(*customer_data, "customer_city", cJSON_CreateString(customer_city));
 
+                    // null email null phone situation
+
+                    if (len_customer_phone == SQL_NULL_DATA)
+                    {
+                        cJSON_AddItemToObject(*customer_data, "customer_phone", cJSON_CreateString("N/A"));
+                    }
+                    else
+                    {
                     cJSON_AddItemToObject(*customer_data, "customer_phone", cJSON_CreateString(customer_phone));
+                    }
+                    if (len_customer_phone == SQL_NULL_DATA)
+                    {
+                        cJSON_AddItemToObject(*customer_data, "customer_email", cJSON_CreateString("N/A"));
+                    }
+                    else
+                    {
                     cJSON_AddItemToObject(*customer_data, "customer_email", cJSON_CreateString(customer_email));
+                }
                 }
                 else
                 {

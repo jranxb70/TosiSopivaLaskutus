@@ -359,44 +359,57 @@ void queryInvoiceById(_In_ int invoice_id, _Out_ char** jsonString, _Out_ node_t
 
                 while (SQLFetch(hstmt) == SQL_SUCCESS)
                 {
-                    SQLGetData(hstmt, 1, SQL_C_SLONG, &customerId, 0, NULL);
-                    SQLGetData(hstmt, 2, SQL_C_CHAR, firstName, sizeof(firstName), NULL);
-                    SQLGetData(hstmt, 3, SQL_C_CHAR, lastName, sizeof(lastName), NULL);
-                    SQLGetData(hstmt, 4, SQL_C_CHAR, address, sizeof(address), NULL);
-                    SQLGetData(hstmt, 5, SQL_C_CHAR, zip, sizeof(zip), NULL);
-                    SQLGetData(hstmt, 6, SQL_C_CHAR, city, sizeof(city), NULL);
+                    SQLGetData(hstmt, 1,  SQL_C_SLONG,  &customerId,            0,                              NULL);
+                    SQLGetData(hstmt, 2,  SQL_C_CHAR,   firstName,              sizeof(firstName),              NULL);
+                    SQLGetData(hstmt, 3,  SQL_C_CHAR,   lastName,               sizeof(lastName),               NULL);
+                    SQLGetData(hstmt, 4,  SQL_C_CHAR,   address,                sizeof(address),                NULL);
+                    SQLGetData(hstmt, 5,  SQL_C_CHAR,   zip,                    sizeof(zip),                    NULL);
+                    SQLGetData(hstmt, 6,  SQL_C_CHAR,   city,                   sizeof(city),                   NULL);
 
-                    // SQLGetData(hstmt, 7, SQL_C_CHAR, phone, sizeof(phone), NULL);
-                    // SQLGetData(hstmt, 8, SQL_C_CHAR, email, sizeof(email), NULL);
                     SQLLEN phoneLen, emailLen;
 
-                    SQLGetData(hstmt, 7, SQL_C_CHAR, phone, sizeof(phone), &phoneLen);
-                    SQLGetData(hstmt, 8, SQL_C_CHAR, email, sizeof(email), &emailLen);
+                    SQLGetData(hstmt, 7,  SQL_C_CHAR,   phone,                  sizeof(phone),                  &phoneLen);
+                    SQLGetData(hstmt, 8,  SQL_C_CHAR,   email,                  sizeof(email),                  &emailLen);
 
-                    SQLGetData(hstmt,  9, SQL_C_SLONG,  &invoiceId,                    0, NULL);
-                    SQLGetData(hstmt,  10, SQL_C_CHAR,   date,               sizeof(date), NULL);
+                    SQLGetData(hstmt, 9,  SQL_C_SLONG,  &invoiceId,             0,                              NULL);
+                    SQLGetData(hstmt, 10, SQL_C_CHAR,   date,                   sizeof(date),                   NULL);
 
-                    SQLGetData(hstmt, 11, SQL_C_CHAR, invoice_bank_reference, sizeof(invoice_bank_reference), NULL);
+                    SQLGetData(hstmt, 11, SQL_C_CHAR,   invoice_bank_reference, sizeof(invoice_bank_reference), NULL);
 
-                    SQLGetData(hstmt,  12, SQL_C_DOUBLE, &invoice_subtotal,             0, NULL);
-                    SQLGetData(hstmt, 13, SQL_C_DOUBLE, &invoice_tax,                  0, NULL);
-                    SQLGetData(hstmt, 14, SQL_C_DOUBLE, &invoice_total,                0, NULL);
-                    SQLGetData(hstmt, 15, SQL_C_CHAR, invoice_due_date, sizeof(invoice_due_date), NULL);
+                    SQLGetData(hstmt, 12, SQL_C_DOUBLE, &invoice_subtotal,      0,                              NULL);
+                    SQLGetData(hstmt, 13, SQL_C_DOUBLE, &invoice_tax,           0,                              NULL);
+                    SQLGetData(hstmt, 14, SQL_C_DOUBLE, &invoice_total,         0,                              NULL);
 
-                    printf("Customer ID: %d, First name: %s, Last name: %s, Address: %s, Address: %s, City: %s\n",
+                    SQLLEN invoice_due_date;
+
+                    SQLGetData(hstmt, 15, SQL_C_CHAR,   invoice_due_date,       sizeof(invoice_due_date),       &invoice_due_date);
+
+                    if (phoneLen == SQL_NULL_DATA)
+                    {
+                        strcpy_s(phone, sizeof(phone), "N/A");
+                    }
+
+                    if (emailLen == SQL_NULL_DATA)
+                    {
+                        strcpy_s(email, sizeof(email), "N/A");
+                    }
+
+                    printf("Customer ID: %d, First name: %s, Last name: %s, Address: %s, Address: %s, City: %s Phone: %s, Email: %s\n",
                         customerId,
                         firstName,
                         lastName,
                         address,
                         zip,
-                        city);
+                        city,
+                        phone,
+                        email);
 
                     cJSON_AddNumberToObject(root, "customer_id", customerId);
-                    cJSON_AddStringToObject(root, "first_name", firstName);
-                    cJSON_AddStringToObject(root, "last_name", lastName);
-                    cJSON_AddStringToObject(root, "address", address);
-                    cJSON_AddStringToObject(root, "zip", zip);
-                    cJSON_AddStringToObject(root, "city", city);
+                    cJSON_AddStringToObject(root, "first_name",  firstName);
+                    cJSON_AddStringToObject(root, "last_name",   lastName);
+                    cJSON_AddStringToObject(root, "address",     address);
+                    cJSON_AddStringToObject(root, "zip",         zip);
+                    cJSON_AddStringToObject(root, "city",        city);
 
 
                     // null email null phone situation
@@ -427,7 +440,14 @@ void queryInvoiceById(_In_ int invoice_id, _Out_ char** jsonString, _Out_ node_t
                     cJSON_AddNumberToObject(root, "invoice_tax", invoice_tax);
                     cJSON_AddNumberToObject(root, "invoice_total", invoice_total);
 
+                    if (invoice_due_date == SQL_NULL_DATA)
+                    {
+                        cJSON_AddStringToObject(root, "invoice_due_date", "N/A");
+                    }
+                    else
+                    {
                     cJSON_AddStringToObject(root, "invoice_due_date", invoice_due_date);
+                    }
 
                     cJSON_AddArrayToObject(root, "invoice_lines");
                 }
@@ -520,7 +540,7 @@ void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out
 
                 while (SQLFetch(hstmt) == SQL_SUCCESS) 
                 {
-                    SQLGetData(hstmt, 1, SQL_C_SLONG,   &customerId,     0,                     NULL);
+                    SQLGetData(hstmt, 1, SQL_C_SLONG,   &customerId,    0,                      NULL);
                     SQLGetData(hstmt, 2, SQL_C_CHAR,    firstName,      sizeof(firstName),      NULL);
                     SQLGetData(hstmt, 3, SQL_C_CHAR,    lastName,       sizeof(lastName),       NULL);
                     SQLGetData(hstmt, 4, SQL_C_CHAR,    address,        sizeof(address),        NULL);
@@ -528,6 +548,21 @@ void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out
                     SQLGetData(hstmt, 6, SQL_C_CHAR,    city,           sizeof(city),           NULL);
                     SQLGetData(hstmt, 7, SQL_C_CHAR,    phone,          sizeof(phone),          NULL);
                     SQLGetData(hstmt, 8, SQL_C_CHAR,    email,          sizeof(email),          NULL);
+
+                    SQLLEN phoneLen, emailLen;
+
+                    SQLGetData(hstmt, 7, SQL_C_CHAR,    phone,          sizeof(phone),          &phoneLen);
+                    SQLGetData(hstmt, 8, SQL_C_CHAR,    email,          sizeof(email),          &emailLen);
+
+                    if (phoneLen == SQL_NULL_DATA)
+                    {
+                        strcpy_s(phone, sizeof(phone), "N/A");
+                    }
+
+                    if (emailLen == SQL_NULL_DATA)
+                    {
+                        strcpy_s(email, sizeof(email), "N/A");
+                    }
 
                     printf("Customer ID: %d, First name: %s, Last name: %s, Address: %s, Address: %s, City: %s\n", 
                             customerId,
@@ -538,14 +573,30 @@ void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out
                             city);
 
                     cJSON_AddNumberToObject(root, "customer_id", customerId);
-                    cJSON_AddStringToObject(root, "first_name", firstName);
-                    cJSON_AddStringToObject(root, "last_name", lastName);
-                    cJSON_AddStringToObject(root, "address", address);
-                    cJSON_AddStringToObject(root, "zip", zip);
-                    cJSON_AddStringToObject(root, "city", city);
+                    cJSON_AddStringToObject(root, "first_name",  firstName);
+                    cJSON_AddStringToObject(root, "last_name",   lastName);
+                    cJSON_AddStringToObject(root, "address",     address);
+                    cJSON_AddStringToObject(root, "zip",         zip);
+                    cJSON_AddStringToObject(root, "city",        city);
 
+                    // null email null phone situation
+
+                    if (phoneLen == SQL_NULL_DATA)
+                    {
+                        cJSON_AddStringToObject(root, "phone", "N/A");
+                    }
+                    else
+                    {
                     cJSON_AddStringToObject(root, "phone", phone);
-                    cJSON_AddStringToObject(root, "email",email);
+                    }
+                    if (emailLen == SQL_NULL_DATA)
+                    {
+                        cJSON_AddStringToObject(root, "email", "N/A");
+                    }
+                    else
+                    {
+                        cJSON_AddStringToObject(root, "email", email);
+                    }
 
                     invoices = cJSON_AddArrayToObject(root, "invoices");
                 }
@@ -573,7 +624,9 @@ void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out
                     SQLGetData(hstmt, 6, SQL_C_DOUBLE, &invoice_tax, 0, NULL);
                     SQLGetData(hstmt, 7, SQL_C_DOUBLE, &invoice_total, 0, NULL);
 
-                    SQLGetData(hstmt, 8, SQL_C_CHAR, invoice_due_date, sizeof(invoice_due_date), NULL);
+                    SQLLEN invoice_due_date_len;
+
+                    SQLGetData(hstmt, 8, SQL_C_CHAR, invoice_due_date, sizeof(invoice_due_date), &invoice_due_date_len);
 
                     printf("Invoice ID: %d, Bank Reference: %s\n", invoiceId, bankReference);
 
@@ -586,7 +639,15 @@ void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out
                     cJSON_AddNumberToObject(invoice, "invoice_tax", invoice_tax);
                     cJSON_AddNumberToObject(invoice, "invoice_total", invoice_total);
 
+                    if (invoice_due_date_len == SQL_NULL_DATA)
+                    {
+
+                        cJSON_AddStringToObject(invoice, "invoice_due_date", "N/A");
+                    }
+                    else
+                    {
                     cJSON_AddStringToObject(invoice, "invoice_due_date", invoice_due_date);
+                    }
 
                     invoice_lines = cJSON_AddArrayToObject(invoice, "invoice_lines");
 
@@ -903,8 +964,8 @@ void addCustomer(
         SQLBindParameter(hstmt, 5, SQL_PARAM_INPUT,  SQL_C_CHAR, SQL_VARCHAR, 100, 0, customer_zip,       0, NULL);
         SQLBindParameter(hstmt, 6, SQL_PARAM_INPUT,  SQL_C_CHAR, SQL_VARCHAR,  50, 0, customer_city,      0, NULL);
 
-        SQLBindParameter(hstmt, 7, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 20, 0, customer_phone, 0, NULL);
-        SQLBindParameter(hstmt, 8, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 100, 0, customer_email, 0, NULL);
+        SQLBindParameter(hstmt, 7, SQL_PARAM_INPUT,  SQL_C_CHAR, SQL_VARCHAR,  20, 0, customer_phone,     0, NULL);
+        SQLBindParameter(hstmt, 8, SQL_PARAM_INPUT,  SQL_C_CHAR, SQL_VARCHAR, 100, 0, customer_email,     0, NULL);
 
         // Prepare the SQL statement
         ret = SQLPrepare(hstmt, query, SQL_NTS);
@@ -1045,22 +1106,21 @@ int getCustomer(_In_ int customer_id, _Out_ cJSON** customer_data)
                 SQLLEN len_customer_email;
 
                 int ret1 = SQLGetData(hstmt, 2, SQL_C_CHAR, customer_first_name, sizeof(customer_first_name), &len_customer_first_name);
-                int ret2 = SQLGetData(hstmt, 3, SQL_C_CHAR, customer_last_name, sizeof(customer_last_name), &len_customer_last_name);
-                int ret3 = SQLGetData(hstmt, 4, SQL_C_CHAR, customer_address, sizeof(customer_address), &len_customer_address);
-                int ret4 = SQLGetData(hstmt, 5, SQL_C_CHAR, customer_zip, sizeof(customer_zip), &len_customer_zip);
-                int ret5 = SQLGetData(hstmt, 6, SQL_C_CHAR, customer_city, sizeof(customer_city), &len_customer_city);
-
-                int ret6 = SQLGetData(hstmt, 7, SQL_C_CHAR, customer_phone, sizeof(customer_phone), &len_customer_phone);
-                int ret7 = SQLGetData(hstmt, 8, SQL_C_CHAR, customer_email, sizeof(customer_email), &len_customer_email);
+                int ret2 = SQLGetData(hstmt, 3, SQL_C_CHAR, customer_last_name,  sizeof(customer_last_name),  &len_customer_last_name);
+                int ret3 = SQLGetData(hstmt, 4, SQL_C_CHAR, customer_address,    sizeof(customer_address),    &len_customer_address);
+                int ret4 = SQLGetData(hstmt, 5, SQL_C_CHAR, customer_zip,        sizeof(customer_zip),        &len_customer_zip);
+                int ret5 = SQLGetData(hstmt, 6, SQL_C_CHAR, customer_city,       sizeof(customer_city),       &len_customer_city);
+                int ret6 = SQLGetData(hstmt, 7, SQL_C_CHAR, customer_phone,      sizeof(customer_phone),      &len_customer_phone);
+                int ret7 = SQLGetData(hstmt, 8, SQL_C_CHAR, customer_email,      sizeof(customer_email),      &len_customer_email);
 
                 if (SQL_SUCCEEDED(ret1) && SQL_SUCCEEDED(ret2) && SQL_SUCCEEDED(ret3) && SQL_SUCCEEDED(ret4) && SQL_SUCCEEDED(ret5) && SQL_SUCCEEDED(ret6) && SQL_SUCCEEDED(ret7))
                 {
-                    cJSON_AddNumberToObject(*customer_data, "customer_id", customer_id);
-                    cJSON_AddItemToObject(*customer_data, "customer_first_name", cJSON_CreateString(customer_first_name));
-                    cJSON_AddItemToObject(*customer_data, "customer_last_name", cJSON_CreateString(customer_last_name));
-                    cJSON_AddItemToObject(*customer_data, "customer_address", cJSON_CreateString(customer_address));
-                    cJSON_AddItemToObject(*customer_data, "customer_zip", cJSON_CreateString(customer_zip));
-                    cJSON_AddItemToObject(*customer_data, "customer_city", cJSON_CreateString(customer_city));
+                    cJSON_AddNumberToObject(*customer_data,   "customer_id",         customer_id);
+                    cJSON_AddItemToObject(  *customer_data,   "customer_first_name", cJSON_CreateString(customer_first_name));
+                    cJSON_AddItemToObject(  *customer_data,   "customer_last_name",  cJSON_CreateString(customer_last_name));
+                    cJSON_AddItemToObject(  *customer_data,   "customer_address",    cJSON_CreateString(customer_address));
+                    cJSON_AddItemToObject(  *customer_data,   "customer_zip",        cJSON_CreateString(customer_zip));
+                    cJSON_AddItemToObject(  *customer_data,   "customer_city",       cJSON_CreateString(customer_city));
 
                     // null email null phone situation
 
@@ -1072,7 +1132,7 @@ int getCustomer(_In_ int customer_id, _Out_ cJSON** customer_data)
                     {
                     cJSON_AddItemToObject(*customer_data, "customer_phone", cJSON_CreateString(customer_phone));
                     }
-                    if (len_customer_phone == SQL_NULL_DATA)
+                    if (len_customer_email == SQL_NULL_DATA)
                     {
                         cJSON_AddItemToObject(*customer_data, "customer_email", cJSON_CreateString("N/A"));
                     }

@@ -69,6 +69,16 @@ extern "C" {
 		_Out_ char**				jsonString, 
 		_Out_ node_t**				errorList);
 
+	void DB_ENGINE_LIBRARY_EXPORT updateCustomer(
+		_In_ int					customer_id, 
+		_In_ const char*			customer_firstName, 
+		_In_ const char*			customer_lastName,
+		_In_ const char*			customer_address,
+		_In_ const char*			customer_zip,
+		_In_ const char*			customer_city,
+		_In_ const char*			customer_phone,
+		_In_ const char*			customer_email);
+
 	int  DB_ENGINE_LIBRARY_EXPORT free_json_data(int selector);
 
 	void DB_ENGINE_LIBRARY_EXPORT free_sql_error_details();

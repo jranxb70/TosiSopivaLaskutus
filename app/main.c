@@ -21,6 +21,32 @@ void queryInvoiceByInvoiceId()
     free(jsonString);
 }
 
+void testUpdateForCustomer()
+{
+    int id = 1;
+    char firstName[50] = "Testi";
+    char lastName[50] = "Kommunisti";
+    char address[50] = "Huhtalantie 50";
+    char zip[50] = "60200";
+    char city[50] = "Seinäjoki";
+
+    char phone[20] = "964-122089";
+    char email[100] = "testi.kommunisti@kommarit.fi";
+
+    char city[50] = "Ilmajoki";
+
+    updateCustomer(
+        _In_ (int) id,
+        _In_ (const char*) firstName,
+        _In_ (const char*) lastName,
+        _In_ (const char*) address,
+        _In_ (const char*) zip,
+        _In_ (const char*) city,
+        _In_ (const char*) phone,
+        _In_ (const char*) email);
+
+}
+
 
 int main(int argc, char *argv[])
 {
@@ -29,6 +55,9 @@ int main(int argc, char *argv[])
         fprintf(stdout, "%s\n", "Insufficient input - enter a value.");
         return 1;
     }
+
+    testUpdateForCustomer();
+
     char* jsonX = NULL;
     node_t* errsX = NULL;
     queryCustomers(&jsonX, &errsX);

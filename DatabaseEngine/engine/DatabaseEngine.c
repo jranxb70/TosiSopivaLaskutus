@@ -184,6 +184,77 @@ void free_sql_error_details()
     internalErrorList = NULL;
 }
 
+
+void updateCustomer(
+    _In_ int customer_id, 
+    _In_ const char* customer_firstName, 
+    _In_ const char* customer_lastName,
+    _In_ const char* customer_address,
+    _In_ const char* customer_zip,
+    _In_ const char* customer_city,
+    _In_ const char* customer_phone,
+    _In_ const char* customer_email)
+{
+    char fileName[21] = "connectionstring.txt";
+    DBERROR* err = NULL;
+    dbOpen(fileName, &err);
+
+    if (err->errorCode < 0)
+    {
+        free(err);
+        return;
+    }
+    int ret = err->errorCode;
+    free(err);
+    err = NULL;
+
+    char query[1024];
+    size_t bufferCount = 1024;
+    sprintf_s(query, bufferCount,
+        "{CALL dbo.UpdateCustomer (?, ?, ?, ?, ?, ?, ?, ?)}");
+
+    SQLHSTMT hstmt;
+    SQLINTEGER id = customer_id;
+
+    if (SQL_SUCCEEDED(ret)) {
+        // Allocate a statement handle
+        SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
+
+        SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT,  SQL_C_SLONG, SQL_INTEGER, 0,   0, &id,                0, NULL);
+        SQLBindParameter(hstmt, 2, SQL_PARAM_INPUT,  SQL_C_CHAR,  SQL_VARCHAR, 50,  0, customer_firstName, 0, NULL);
+        SQLBindParameter(hstmt, 3, SQL_PARAM_INPUT,  SQL_C_CHAR,  SQL_VARCHAR, 50,  0, customer_lastName,  0, NULL);
+        SQLBindParameter(hstmt, 4, SQL_PARAM_INPUT,  SQL_C_CHAR,  SQL_VARCHAR, 100, 0, customer_address,   0, NULL);
+        SQLBindParameter(hstmt, 5, SQL_PARAM_INPUT,  SQL_C_CHAR,  SQL_VARCHAR, 100, 0, customer_zip,       0, NULL);
+        SQLBindParameter(hstmt, 6, SQL_PARAM_INPUT,  SQL_C_CHAR,  SQL_VARCHAR, 50,  0, customer_city,      0, NULL);
+
+        SQLBindParameter(hstmt, 7, SQL_PARAM_INPUT,  SQL_C_CHAR,  SQL_VARCHAR, 20,  0, customer_phone,     0, NULL);
+        SQLBindParameter(hstmt, 8, SQL_PARAM_INPUT,  SQL_C_CHAR,  SQL_VARCHAR, 100, 0, customer_email,     0, NULL);
+
+        // Prepare the SQL statement
+        ret = SQLPrepare(hstmt, query, SQL_NTS);
+        if (SQL_SUCCEEDED(ret))
+        {
+            // Execute the query
+            ret = SQLExecute(hstmt);
+
+            if (SQL_SUCCEEDED(ret))
+            {
+                if (SQLMoreResults(hstmt) == SQL_NO_DATA)
+                {
+                    printf("SQL operations ready");
+                }
+            }
+            // Free the statement handle
+            SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
+        }
+    }
+    else {
+        // Get the return code
+        SQLGetDiagRec(SQL_HANDLE_DBC, hdbc, 1, NULL, NULL, retcode, SQL_RETURN_CODE_LEN, NULL);
+        printf("Error connecting to database: %s\n", retcode);
+    }
+    dbClose();
+}
 void queryCustomers(_Out_ char** jsonString, _Out_ node_t** errorList)
 {
     char fileName[21] = "connectionstring.txt";

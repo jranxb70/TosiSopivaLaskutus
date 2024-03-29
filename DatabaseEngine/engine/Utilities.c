@@ -756,3 +756,83 @@ int find_index_of_invoices_closing_bracket(const char* json, int start_index)
         return -1;  // Return -1 if "]" is not found in the JSON string after start_index
     }
 }
+
+int function()
+{
+    char* jh = "M\xc3\xa4nnist\xc3\xb6";
+
+    int ret = -1;
+    unsigned char iso8859_1 = 0;
+
+    int integers[100];
+
+    long length = 0;
+
+    unsigned char* chars = (unsigned char*)malloc(0);
+
+    if (!!chars)
+    {
+    }
+    else
+    {
+        ret = ERROR_REALLOC_FAILED;
+        goto exit;
+    }
+
+    long indexOfTheISO88591Array = 0;
+
+    for (long indexOfCodepointArray = 0; indexOfCodepointArray < length; indexOfCodepointArray++)
+    {
+        unsigned char utf8[] = { 0, 0 };
+#pragma warning( push )
+#pragma warning( disable : 6011 )
+        utf8[0] = integers[indexOfCodepointArray];
+#pragma warning( pop )
+
+        // If the UTF-8 character is in the ASCII range, it's the same in ISO 8859-1
+        if (utf8[0] < 128) {
+            iso8859_1 = utf8[0];
+        }
+        // Otherwise, if it's a 2-byte UTF-8 character, we can find the ISO 8859-1 character by subtracting 194 from the first byte
+        else if (utf8[0] < 224) {
+#pragma warning( push )
+#pragma warning( disable : 6385)
+            utf8[1] = (unsigned char)integers[indexOfCodepointArray + 1];
+#pragma warning( pop )
+            iso8859_1 = (utf8[0] & 0x1F) << 6 | (utf8[1] & 0x3F);
+        }
+
+#pragma warning( push )
+#pragma warning( disable : 28182 )
+        chars[indexOfTheISO88591Array] = (unsigned char)iso8859_1;
+#pragma warning( pop )
+
+        unsigned char* tem = (unsigned char*)realloc(chars, (indexOfTheISO88591Array + 1) * sizeof(unsigned char) + 1);
+
+        if (!tem)
+        {
+            free(chars);
+            ret = ERROR_REALLOC_FAILED;
+            goto exit;
+        }
+
+#pragma warning( push )
+#pragma warning( disable : 28182 )
+        long currentIndex = ((indexOfTheISO88591Array + 1) * sizeof(unsigned char));
+        tem[currentIndex] = '\0';
+#pragma warning( pop )
+        if (indexOfTheISO88591Array == 0)
+            strcpy_s((char*)tem, (indexOfTheISO88591Array + 1) * sizeof(unsigned char) + 1, (char*)&utf8[0]);
+        chars = tem;
+        if (utf8[0] >= 128 && utf8[0] < 224)
+        {
+            indexOfCodepointArray++;
+        }
+        indexOfTheISO88591Array++;
+    }
+
+    jh = chars;
+    return 0;
+exit:
+    return -1;
+}

@@ -332,7 +332,7 @@ void queryCustomers(_Out_ char** jsonString, _Out_ node_t** errorList)
         }
         else
         {
-        cJSON_AddStringToObject(customer, "phone", phone);
+            cJSON_AddStringToObject(customer, "phone", phone);
         }
         if (emailLen == SQL_NULL_DATA)
         {
@@ -340,13 +340,13 @@ void queryCustomers(_Out_ char** jsonString, _Out_ node_t** errorList)
         }
         else
         {
-        cJSON_AddStringToObject(customer, "email", email);
+            cJSON_AddStringToObject(customer, "email", email);
         }
 
         cJSON* customer_array = NULL;
         customer_array = cJSON_GetObjectItem(root, "customers");
         cJSON_AddItemReferenceToArray(customer_array, customer);
-}
+    }
 
     *jsonString = cJSON_Print(root);
 
@@ -491,7 +491,7 @@ void queryInvoiceById(_In_ int invoice_id, _Out_ char** jsonString, _Out_ node_t
                     }
                     else
                     {
-                    cJSON_AddStringToObject(root, "phone", phone);
+                        cJSON_AddStringToObject(root, "phone", phone);
                     }
                     if (emailLen == SQL_NULL_DATA)
                     {
@@ -499,7 +499,7 @@ void queryInvoiceById(_In_ int invoice_id, _Out_ char** jsonString, _Out_ node_t
                     }
                     else
                     { 
-                    cJSON_AddStringToObject(root, "email", email);
+                        cJSON_AddStringToObject(root, "email", email);
                     }
 
                     cJSON_AddNumberToObject(root, "invoice_id", invoiceId);
@@ -517,7 +517,7 @@ void queryInvoiceById(_In_ int invoice_id, _Out_ char** jsonString, _Out_ node_t
                     }
                     else
                     {
-                    cJSON_AddStringToObject(root, "invoice_due_date", invoice_due_date);
+                        cJSON_AddStringToObject(root, "invoice_due_date", invoice_due_date);
                     }
 
                     cJSON_AddArrayToObject(root, "invoice_lines");
@@ -617,8 +617,6 @@ void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out
                     SQLGetData(hstmt, 4, SQL_C_CHAR,    address,        sizeof(address),        NULL);
                     SQLGetData(hstmt, 5, SQL_C_CHAR,    zip,            sizeof(zip),            NULL);
                     SQLGetData(hstmt, 6, SQL_C_CHAR,    city,           sizeof(city),           NULL);
-                    SQLGetData(hstmt, 7, SQL_C_CHAR,    phone,          sizeof(phone),          NULL);
-                    SQLGetData(hstmt, 8, SQL_C_CHAR,    email,          sizeof(email),          NULL);
 
                     SQLLEN phoneLen, emailLen;
 
@@ -658,7 +656,7 @@ void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out
                     }
                     else
                     {
-                    cJSON_AddStringToObject(root, "phone", phone);
+                        cJSON_AddStringToObject(root, "phone", phone);
                     }
                     if (emailLen == SQL_NULL_DATA)
                     {
@@ -717,7 +715,7 @@ void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out
                     }
                     else
                     {
-                    cJSON_AddStringToObject(invoice, "invoice_due_date", invoice_due_date);
+                        cJSON_AddStringToObject(invoice, "invoice_due_date", invoice_due_date);
                     }
 
                     invoice_lines = cJSON_AddArrayToObject(invoice, "invoice_lines");
@@ -725,10 +723,10 @@ void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out
                     cJSON_AddItemReferenceToArray(invoices, invoice);
                 }
             }
-            else if (strcmp((char*)columnName, "invoice_line_id") == 0) 
+            else if (strcmp((char*)columnName, "invoice_line_id") == 0)
             {
                 fetchInvoiceLineDataAsJson(&hstmt, &root);
-                    }
+            }
         } while (SQLMoreResults(hstmt) == SQL_SUCCESS);
     }
 
@@ -756,7 +754,7 @@ void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out
 */
 void addInvoiceLine(
     _In_ bool                   open_database,
-    _In_ int                    invoice_id, 
+    _In_ int                    invoice_id,
     //_In_ char* invoiceline_product,
     _In_ int                    product_item_id,
     _In_ int                    invoiceline_quantity,
@@ -830,8 +828,8 @@ void addInvoiceLine(
     }
     if (open_database)
     {
-    dbClose();
-}
+        dbClose();
+    }
 }
 
 /**
@@ -915,7 +913,7 @@ int addInvoice(
 
             *errorList = internalErrorList;
 
-            result_sql_sp_execute = -5;
+             result_sql_sp_execute = -5;
 
 #ifdef _DEBUG
             time_t current_time;
@@ -1080,8 +1078,8 @@ int getCustomerCharOut(
     int err = getCustomer(customer_id, &customer_data_pointer);
     if (!(err < 0))
     {
-    *customer_data = cJSON_Print(customer_data_pointer);
-    json_data_char = *customer_data;
+        *customer_data = cJSON_Print(customer_data_pointer);
+        json_data_char = *customer_data;
     }
     return err;
 }
@@ -1201,7 +1199,7 @@ int getCustomer(_In_ int customer_id, _Out_ cJSON** customer_data)
                     }
                     else
                     {
-                    cJSON_AddItemToObject(*customer_data, "customer_phone", cJSON_CreateString(customer_phone));
+                        cJSON_AddItemToObject(*customer_data, "customer_phone", cJSON_CreateString(customer_phone));
                     }
                     if (len_customer_email == SQL_NULL_DATA)
                     {
@@ -1209,8 +1207,8 @@ int getCustomer(_In_ int customer_id, _Out_ cJSON** customer_data)
                     }
                     else
                     {
-                    cJSON_AddItemToObject(*customer_data, "customer_email", cJSON_CreateString(customer_email));
-                }
+                        cJSON_AddItemToObject(*customer_data, "customer_email", cJSON_CreateString(customer_email));
+                    }
                 }
                 else
                 {

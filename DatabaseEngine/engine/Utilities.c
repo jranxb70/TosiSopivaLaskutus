@@ -757,16 +757,30 @@ int find_index_of_invoices_closing_bracket(const char* json, int start_index)
     }
 }
 
-int function()
+int decodeUTF8Encoding(_In_ char* encodedCharArray, _Out_ char** decodedCharArray)
 {
-    char* jh = "M\xc3\xa4nnist\xc3\xb6";
+    *decodedCharArray = NULL;
+
+    int lengthWithEncodedChars = strlen(encodedCharArray);
 
     int ret = -1;
     unsigned char iso8859_1 = 0;
 
-    int integers[100];
+    int* integers = (int*)malloc(lengthWithEncodedChars * sizeof(int));
 
-    long length = 0;
+    if (!!integers)
+    {
+        for (int i = 0; i < lengthWithEncodedChars; i++)
+        {
+            integers[i] = (int)(unsigned char)encodedCharArray[i];
+        }
+    }
+    else
+    {
+        goto exit;
+    }
+
+    long length = lengthWithEncodedChars;
 
     unsigned char* chars = (unsigned char*)malloc(0);
 
@@ -831,7 +845,7 @@ int function()
         indexOfTheISO88591Array++;
     }
 
-    jh = chars;
+    *decodedCharArray = chars;
     return 0;
 exit:
     return -1;

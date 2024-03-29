@@ -207,6 +207,18 @@ void updateCustomer(
     free(err);
     err = NULL;
 
+    char* customer_firstName_converted = NULL;
+    decodeUTF8Encoding(customer_firstName, &customer_firstName_converted);
+
+    char* customer_lastName_converted = NULL;
+    decodeUTF8Encoding(customer_lastName, &customer_lastName_converted);
+
+    char* customer_address_converted = NULL;
+    decodeUTF8Encoding(customer_address, &customer_address_converted);
+
+    char* customer_city_converted = NULL;
+    decodeUTF8Encoding(customer_city, &customer_city_converted);
+    
     char query[1024];
     size_t bufferCount = 1024;
     sprintf_s(query, bufferCount,
@@ -219,15 +231,15 @@ void updateCustomer(
         // Allocate a statement handle
         SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
 
-        SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT,  SQL_C_SLONG, SQL_INTEGER, 0,   0, &id,                0, NULL);
-        SQLBindParameter(hstmt, 2, SQL_PARAM_INPUT,  SQL_C_CHAR,  SQL_VARCHAR, 50,  0, customer_firstName, 0, NULL);
-        SQLBindParameter(hstmt, 3, SQL_PARAM_INPUT,  SQL_C_CHAR,  SQL_VARCHAR, 50,  0, customer_lastName,  0, NULL);
-        SQLBindParameter(hstmt, 4, SQL_PARAM_INPUT,  SQL_C_CHAR,  SQL_VARCHAR, 100, 0, customer_address,   0, NULL);
-        SQLBindParameter(hstmt, 5, SQL_PARAM_INPUT,  SQL_C_CHAR,  SQL_VARCHAR, 6,   0, customer_zip,       0, NULL);
-        SQLBindParameter(hstmt, 6, SQL_PARAM_INPUT,  SQL_C_CHAR,  SQL_VARCHAR, 50,  0, customer_city,      0, NULL);
+        SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT,  SQL_C_SLONG, SQL_INTEGER, 0,   0, &id,                             0, NULL);
+        SQLBindParameter(hstmt, 2, SQL_PARAM_INPUT,  SQL_C_CHAR,  SQL_VARCHAR, 50,  0, customer_firstName_converted,    0, NULL);
+        SQLBindParameter(hstmt, 3, SQL_PARAM_INPUT,  SQL_C_CHAR,  SQL_VARCHAR, 50,  0, customer_lastName_converted,     0, NULL);
+        SQLBindParameter(hstmt, 4, SQL_PARAM_INPUT,  SQL_C_CHAR,  SQL_VARCHAR, 100, 0, customer_address_converted,      0, NULL);
+        SQLBindParameter(hstmt, 5, SQL_PARAM_INPUT,  SQL_C_CHAR,  SQL_VARCHAR, 6,   0, customer_zip,                    0, NULL);
+        SQLBindParameter(hstmt, 6, SQL_PARAM_INPUT,  SQL_C_CHAR,  SQL_VARCHAR, 50,  0, customer_city_converted,         0, NULL);
 
-        SQLBindParameter(hstmt, 7, SQL_PARAM_INPUT,  SQL_C_CHAR,  SQL_VARCHAR, 20,  0, customer_phone,     0, NULL);
-        SQLBindParameter(hstmt, 8, SQL_PARAM_INPUT,  SQL_C_CHAR,  SQL_VARCHAR, 100, 0, customer_email,     0, NULL);
+        SQLBindParameter(hstmt, 7, SQL_PARAM_INPUT,  SQL_C_CHAR,  SQL_VARCHAR, 20,  0, customer_phone,                  0, NULL);
+        SQLBindParameter(hstmt, 8, SQL_PARAM_INPUT,  SQL_C_CHAR,  SQL_VARCHAR, 100, 0, customer_email,                  0, NULL);
 
         // Prepare the SQL statement
         ret = SQLPrepare(hstmt, query, SQL_NTS);
@@ -252,6 +264,12 @@ void updateCustomer(
         SQLGetDiagRec(SQL_HANDLE_DBC, hdbc, 1, NULL, NULL, retcode, SQL_RETURN_CODE_LEN, NULL);
         printf("Error connecting to database: %s\n", retcode);
     }
+
+    free(customer_lastName_converted);
+    free(customer_firstName_converted);
+    free(customer_address_converted);
+    free(customer_city_converted);
+
     dbClose();
 }
 
@@ -778,6 +796,9 @@ void addInvoiceLine(
         free(err);
     }
 
+    char* product_description_decoded = NULL;
+    decodeUTF8Encoding(product_description, &product_description_decoded);
+
     SQLHSTMT hstmt;
     SQLINTEGER id_invoice;
 
@@ -796,7 +817,7 @@ void addInvoiceLine(
         SQLBindParameter(hstmt, 3, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER,   0, 0, &invoiceline_quantity, 0, NULL);
         SQLBindParameter(hstmt, 4, SQL_PARAM_INPUT, SQL_C_DOUBLE, SQL_DECIMAL, 10, 2, &invoiceline_price,    0, NULL);
 
-        SQLBindParameter(hstmt, 5, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 1024, 0, product_description, 0, NULL);
+        SQLBindParameter(hstmt, 5, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 1024, 0, product_description_decoded, 0, NULL);
         // Prepare the SQL statement
         ret = SQLPrepare(hstmt, query, SQL_NTS);
         if (SQL_SUCCEEDED(ret))
@@ -826,6 +847,9 @@ void addInvoiceLine(
         SQLGetDiagRec(SQL_HANDLE_DBC, hdbc, 1, NULL, NULL, retcode, SQL_RETURN_CODE_LEN, NULL);
         printf("Error connecting to database: %s\n", retcode);
     }
+
+    free(product_description_decoded);
+
     if (open_database)
     {
         dbClose();
@@ -1014,6 +1038,18 @@ void addCustomer(
     int ret = err->errorCode;
     free(err);
 
+    char* customer_firstName_decoded = NULL;
+    decodeUTF8Encoding(customer_firstName, &customer_firstName_decoded);
+
+    char* customer_lastName_decoded = NULL;
+    decodeUTF8Encoding(customer_lastName, &customer_lastName_decoded);
+
+    char* customer_address_decoded = NULL;
+    decodeUTF8Encoding(customer_address, &customer_address_decoded);
+
+    char* customer_city_decoded = NULL;
+    decodeUTF8Encoding(customer_city, &customer_city_decoded);
+
     char query[1024];
     size_t bufferCount = 1024;     
     sprintf_s(query, bufferCount,
@@ -1026,15 +1062,14 @@ void addCustomer(
         // Allocate a statement handle
         SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
 
-        SQLBindParameter(hstmt, 1, SQL_PARAM_OUTPUT, SQL_C_SLONG, SQL_INTEGER,  0, 0, &id,                0, NULL);
-        SQLBindParameter(hstmt, 2, SQL_PARAM_INPUT,  SQL_C_CHAR, SQL_VARCHAR,  50, 0, customer_firstName, 0, NULL);
-        SQLBindParameter(hstmt, 3, SQL_PARAM_INPUT,  SQL_C_CHAR, SQL_VARCHAR,  50, 0, customer_lastName,  0, NULL);
-        SQLBindParameter(hstmt, 4, SQL_PARAM_INPUT,  SQL_C_CHAR, SQL_VARCHAR, 100, 0, customer_address,   0, NULL);
-        SQLBindParameter(hstmt, 5, SQL_PARAM_INPUT,  SQL_C_CHAR, SQL_VARCHAR, 100, 0, customer_zip,       0, NULL);
-        SQLBindParameter(hstmt, 6, SQL_PARAM_INPUT,  SQL_C_CHAR, SQL_VARCHAR,  50, 0, customer_city,      0, NULL);
-
-        SQLBindParameter(hstmt, 7, SQL_PARAM_INPUT,  SQL_C_CHAR, SQL_VARCHAR,  20, 0, customer_phone,     0, NULL);
-        SQLBindParameter(hstmt, 8, SQL_PARAM_INPUT,  SQL_C_CHAR, SQL_VARCHAR, 100, 0, customer_email,     0, NULL);
+        SQLBindParameter(hstmt, 1, SQL_PARAM_OUTPUT, SQL_C_SLONG, SQL_INTEGER,  0, 0, &id,                          0, NULL);
+        SQLBindParameter(hstmt, 2, SQL_PARAM_INPUT,  SQL_C_CHAR, SQL_VARCHAR,  50, 0, customer_firstName_decoded,   0, NULL);
+        SQLBindParameter(hstmt, 3, SQL_PARAM_INPUT,  SQL_C_CHAR, SQL_VARCHAR,  50, 0, customer_lastName_decoded,    0, NULL);
+        SQLBindParameter(hstmt, 4, SQL_PARAM_INPUT,  SQL_C_CHAR, SQL_VARCHAR, 100, 0, customer_address_decoded,     0, NULL);
+        SQLBindParameter(hstmt, 5, SQL_PARAM_INPUT,  SQL_C_CHAR, SQL_VARCHAR, 100, 0, customer_zip,                 0, NULL);
+        SQLBindParameter(hstmt, 6, SQL_PARAM_INPUT,  SQL_C_CHAR, SQL_VARCHAR,  50, 0, customer_city_decoded,        0, NULL);
+        SQLBindParameter(hstmt, 7, SQL_PARAM_INPUT,  SQL_C_CHAR, SQL_VARCHAR,  20, 0, customer_phone,               0, NULL);
+        SQLBindParameter(hstmt, 8, SQL_PARAM_INPUT,  SQL_C_CHAR, SQL_VARCHAR, 100, 0, customer_email,               0, NULL);
 
         // Prepare the SQL statement
         ret = SQLPrepare(hstmt, query, SQL_NTS);
@@ -1060,6 +1095,12 @@ void addCustomer(
         SQLGetDiagRec(SQL_HANDLE_DBC, hdbc, 1, NULL, NULL, retcode, SQL_RETURN_CODE_LEN, NULL);
         printf("Error connecting to database: %s\n", retcode);
     }
+
+    free(customer_firstName_decoded);
+    free(customer_lastName_decoded);
+    free(customer_address_decoded);
+    free(customer_city_decoded);
+
     dbClose();
 }
 

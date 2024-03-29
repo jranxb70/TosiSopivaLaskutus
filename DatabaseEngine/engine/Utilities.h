@@ -13,6 +13,10 @@
 
 unsigned long roundToNextHundreds(unsigned long num);
 
+DB_ENGINE_LIBRARY_EXPORT int decodeUTF8Encoding(
+	_In_ char*					encodedString, 
+	_Out_ char**				decodedString);
+
 void save_to_file(
 	const char*					content, 
 	const char*					filename);

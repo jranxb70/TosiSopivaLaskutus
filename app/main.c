@@ -36,14 +36,13 @@ void testUpdateForCustomer()
 
     updateCustomer(
         _In_ (int) id,
-        _In_ (const char*) firstName,
-        _In_ (const char*) lastName,
-        _In_ (const char*) address,
-        _In_ (const char*) zip,
-        _In_ (const char*) city,
-        _In_ (const char*) phone,
-        _In_ (const char*) email);
-
+        _In_ (char*) firstName,
+        _In_ (char*) lastName,
+        _In_ (char*) address,
+        _In_ (char*) zip,
+        _In_ (char*) city,
+        _In_ (char*) phone,
+        _In_ (char*) email);
 }
 
 

@@ -186,13 +186,13 @@ void free_sql_error_details()
 
 void updateCustomer(
     _In_ int customer_id, 
-    _In_ const char* customer_firstName, 
-    _In_ const char* customer_lastName,
-    _In_ const char* customer_address,
-    _In_ const char* customer_zip,
-    _In_ const char* customer_city,
-    _In_ const char* customer_phone,
-    _In_ const char* customer_email)
+    _In_ char* customer_firstName, 
+    _In_ char* customer_lastName,
+    _In_ char* customer_address,
+    _In_ char* customer_zip,
+    _In_ char* customer_city,
+    _In_ char* customer_phone,
+    _In_ char* customer_email)
 {
     char fileName[21] = "connectionstring.txt";
     DBERROR* err = NULL;

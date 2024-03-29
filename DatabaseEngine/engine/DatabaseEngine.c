@@ -42,7 +42,6 @@ void dbOpen(
     _In_ char* fileName,
     _Out_ DBERROR** dbErr)
 {
-
     char* workingDirectory = NULL;
     char* connectionStringW = NULL;
 
@@ -224,7 +223,7 @@ void updateCustomer(
         SQLBindParameter(hstmt, 2, SQL_PARAM_INPUT,  SQL_C_CHAR,  SQL_VARCHAR, 50,  0, customer_firstName, 0, NULL);
         SQLBindParameter(hstmt, 3, SQL_PARAM_INPUT,  SQL_C_CHAR,  SQL_VARCHAR, 50,  0, customer_lastName,  0, NULL);
         SQLBindParameter(hstmt, 4, SQL_PARAM_INPUT,  SQL_C_CHAR,  SQL_VARCHAR, 100, 0, customer_address,   0, NULL);
-        SQLBindParameter(hstmt, 5, SQL_PARAM_INPUT,  SQL_C_CHAR,  SQL_VARCHAR, 100, 0, customer_zip,       0, NULL);
+        SQLBindParameter(hstmt, 5, SQL_PARAM_INPUT,  SQL_C_CHAR,  SQL_VARCHAR, 6,   0, customer_zip,       0, NULL);
         SQLBindParameter(hstmt, 6, SQL_PARAM_INPUT,  SQL_C_CHAR,  SQL_VARCHAR, 50,  0, customer_city,      0, NULL);
 
         SQLBindParameter(hstmt, 7, SQL_PARAM_INPUT,  SQL_C_CHAR,  SQL_VARCHAR, 20,  0, customer_phone,     0, NULL);
@@ -255,6 +254,7 @@ void updateCustomer(
     }
     dbClose();
 }
+
 void queryCustomers(_Out_ char** jsonString, _Out_ node_t** errorList)
 {
     char fileName[21] = "connectionstring.txt";

@@ -50,6 +50,9 @@ extern "C" {
 		_In_ char*					customer_address,
 		_In_ char*					customer_zip,
 		_In_ char*					customer_city,
+		_In_ char*					customer_phone,
+		_In_ char*					customer_email,
+
 		_Out_ int*					customer_id);
 
 	int  DB_ENGINE_LIBRARY_EXPORT getCustomer(

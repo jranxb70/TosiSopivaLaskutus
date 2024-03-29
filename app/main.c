@@ -28,7 +28,6 @@ void testUpdateForCustomer()
     char lastName[50] = "Kommunisti";
     char address[50] = "Huhtalantie 50";
     char zip[50] = "60200";
-    char city[50] = "Seinäjoki";
 
     char phone[20] = "964-122089";
     char email[100] = "testi.kommunisti@kommarit.fi";

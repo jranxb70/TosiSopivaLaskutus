@@ -451,9 +451,9 @@ void queryInvoiceById(_In_ int invoice_id, _Out_ char** jsonString, _Out_ node_t
                     SQLGetData(hstmt, 13, SQL_C_DOUBLE, &invoice_tax,           0,                              NULL);
                     SQLGetData(hstmt, 14, SQL_C_DOUBLE, &invoice_total,         0,                              NULL);
 
-                    SQLLEN invoice_due_date;
+                    SQLLEN invoice_due_dateLen;
 
-                    SQLGetData(hstmt, 15, SQL_C_CHAR,   invoice_due_date,       sizeof(invoice_due_date),       &invoice_due_date);
+                    SQLGetData(hstmt, 15, SQL_C_CHAR,   invoice_due_date,       sizeof(invoice_due_date),       &invoice_due_dateLen);
 
                     if (phoneLen == SQL_NULL_DATA)
                     {
@@ -511,7 +511,7 @@ void queryInvoiceById(_In_ int invoice_id, _Out_ char** jsonString, _Out_ node_t
                     cJSON_AddNumberToObject(root, "invoice_tax", invoice_tax);
                     cJSON_AddNumberToObject(root, "invoice_total", invoice_total);
 
-                    if (invoice_due_date == SQL_NULL_DATA)
+                    if (invoice_due_dateLen == SQL_NULL_DATA)
                     {
                         cJSON_AddStringToObject(root, "invoice_due_date", "N/A");
                     }

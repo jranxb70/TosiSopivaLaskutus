@@ -461,6 +461,19 @@ int parseInvoiceLineData(_In_ int invoice_id, _In_ char* product_name, _Inout_ c
     return success;
 }
 
+void convertIntArrayToUnsignedCharArray(_In_ int* intArray, _Out_ unsigned char** charArray, _In_ int length) 
+{
+    *charArray = (unsigned char*)malloc(length * sizeof(unsigned char));
+    if (*charArray == NULL) {
+        printf("Memory allocation failed\n");
+        return;
+    }
+
+    for (int i = 0; i < length; i++) {
+        (*charArray)[i] = (unsigned char)(intArray[i] % 256);
+    }
+}
+
 /**
 * This function reads the content of a file in the file system.
 *
@@ -495,83 +508,27 @@ int readFile(
     long length = ftell(file);
     fseek(file, 0, SEEK_SET);
 
+    int i = 0;
     int* integers = (int*)malloc((length) * sizeof(int));
-    if (integers) {
+
+    if (integers) 
+    {
         int b = -1;
-        int i = 0;
-        while ((b = fgetc(file)) != EOF) {
-            // printf("%d ", b);
+        
+        while ((b = fgetc(file)) != EOF) 
+        {
             integers[i] = b;
             i++;
         }
     }
 
-    unsigned char iso8859_1 = 0;
+    char* encodedUTF8string = NULL;
+    convertIntArrayToUnsignedCharArray(integers, &encodedUTF8string, i);
 
-    unsigned char* chars = (unsigned char*)malloc(0);
+    char* decodedUTF8string = NULL;
+    decodeUTF8Encoding(encodedUTF8string, &decodedUTF8string);
 
-    if (!!chars)
-    {
-    }
-    else
-    {
-        ret = ERROR_REALLOC_FAILED;
-        goto exit;
-    }
-
-    long indexOfTheISO88591Array = 0;
-
-    for (long indexOfCodepointArray = 0; indexOfCodepointArray < length; indexOfCodepointArray++)
-    {
-        unsigned char utf8[] = { 0, 0 };
-#pragma warning( push )
-#pragma warning( disable : 6011 )
-        utf8[0] = integers[indexOfCodepointArray];
-#pragma warning( pop )
-
-        // If the UTF-8 character is in the ASCII range, it's the same in ISO 8859-1
-        if (utf8[0] < 128) {
-            iso8859_1 = utf8[0];
-        }
-        // Otherwise, if it's a 2-byte UTF-8 character, we can find the ISO 8859-1 character by subtracting 194 from the first byte
-        else if (utf8[0] < 224) {
-#pragma warning( push )
-#pragma warning( disable : 6385)
-            utf8[1] = (unsigned char)integers[indexOfCodepointArray + 1];
-#pragma warning( pop )
-            iso8859_1 = (utf8[0] & 0x1F) << 6 | (utf8[1] & 0x3F);
-        }
-
-#pragma warning( push )
-#pragma warning( disable : 28182 )
-        chars[indexOfTheISO88591Array] = (unsigned char)iso8859_1;
-#pragma warning( pop )
-
-        unsigned char* tem = (unsigned char*)realloc(chars, (indexOfTheISO88591Array + 1) * sizeof(unsigned char) + 1);
-
-        if (!tem)
-        {
-            free(chars);
-            ret = ERROR_REALLOC_FAILED;
-            goto exit;
-        }
-
-#pragma warning( push )
-#pragma warning( disable : 28182 )
-        long currentIndex = ((indexOfTheISO88591Array + 1) * sizeof(unsigned char));
-        tem[currentIndex] = '\0';
-#pragma warning( pop )
-        if (indexOfTheISO88591Array == 0)
-            strcpy_s((char*)tem, (indexOfTheISO88591Array + 1) * sizeof(unsigned char) + 1, (char*)&utf8[0]);
-        chars = tem;
-        if (utf8[0] >= 128 && utf8[0] < 224)
-        {
-            indexOfCodepointArray++;
-        }
-        indexOfTheISO88591Array++;
-    }
-
-    *connectionString = chars;
+    *connectionString = decodedUTF8string;
 
     fclose(file);
     free(integers);
@@ -757,7 +714,7 @@ int find_index_of_invoices_closing_bracket(const char* json, int start_index)
     }
 }
 
-int decodeUTF8Encoding(_In_ char* encodedCharArray, _Out_ char** decodedCharArray)
+/*int decodeUTF8Encoding(_In_ char* encodedCharArray, _Out_ char** decodedCharArray)
 {
     *decodedCharArray = NULL;
 
@@ -773,6 +730,7 @@ int decodeUTF8Encoding(_In_ char* encodedCharArray, _Out_ char** decodedCharArra
         for (int i = 0; i < lengthWithEncodedChars; i++)
         {
             integers[i] = (int)(unsigned char)encodedCharArray[i];
+            printf("integers[i]: %d", integers[i]);
         }
     }
     else
@@ -782,10 +740,11 @@ int decodeUTF8Encoding(_In_ char* encodedCharArray, _Out_ char** decodedCharArra
 
     long length = lengthWithEncodedChars;
 
-    unsigned char* chars = (unsigned char*)malloc(0);
+    unsigned char* chars = (unsigned char*)malloc(1 * sizeof(char));
 
     if (!!chars)
     {
+        chars[0] = '\0';
     }
     else
     {
@@ -797,29 +756,28 @@ int decodeUTF8Encoding(_In_ char* encodedCharArray, _Out_ char** decodedCharArra
 
     for (long indexOfCodepointArray = 0; indexOfCodepointArray < length; indexOfCodepointArray++)
     {
-        unsigned char utf8[] = { 0, 0 };
+        unsigned char utf8[] = { 0, 0, 0 };
 #pragma warning( push )
 #pragma warning( disable : 6011 )
         utf8[0] = integers[indexOfCodepointArray];
 #pragma warning( pop )
 
         // If the UTF-8 character is in the ASCII range, it's the same in ISO 8859-1
-        if (utf8[0] < 128) {
+        if (utf8[0] < 128) 
+        {
             iso8859_1 = utf8[0];
+            utf8[1] = '\0';
         }
         // Otherwise, if it's a 2-byte UTF-8 character, we can find the ISO 8859-1 character by subtracting 194 from the first byte
-        else if (utf8[0] < 224) {
+        else if (utf8[0] < 224) 
+        {
 #pragma warning( push )
 #pragma warning( disable : 6385)
             utf8[1] = (unsigned char)integers[indexOfCodepointArray + 1];
+            utf8[2] = '\0';
 #pragma warning( pop )
             iso8859_1 = (utf8[0] & 0x1F) << 6 | (utf8[1] & 0x3F);
         }
-
-#pragma warning( push )
-#pragma warning( disable : 28182 )
-        chars[indexOfTheISO88591Array] = (unsigned char)iso8859_1;
-#pragma warning( pop )
 
         unsigned char* tem = (unsigned char*)realloc(chars, (indexOfTheISO88591Array + 1) * sizeof(unsigned char) + 1);
 
@@ -834,9 +792,27 @@ int decodeUTF8Encoding(_In_ char* encodedCharArray, _Out_ char** decodedCharArra
 #pragma warning( disable : 28182 )
         long currentIndex = ((indexOfTheISO88591Array + 1) * sizeof(unsigned char));
         tem[currentIndex] = '\0';
+
+        char* pointer = (char*) malloc(sizeof(char) * 2);
+
+        if (!pointer)
+        {
+            goto exit;
+        }
+        pointer[0] = iso8859_1;
+        pointer[1] = '\0';
+
 #pragma warning( pop )
         if (indexOfTheISO88591Array == 0)
-            strcpy_s((char*)tem, (indexOfTheISO88591Array + 1) * sizeof(unsigned char) + 1, (char*)&utf8[0]);
+        {
+            strcpy_s((char*)tem, (indexOfTheISO88591Array + 1) * sizeof(unsigned char) + 1, pointer);
+        }
+        else
+        {
+            strcat_s((char*)tem, (indexOfTheISO88591Array + 1) * sizeof(unsigned char) + 1, pointer);
+        }
+        free(pointer);
+
         chars = tem;
         if (utf8[0] >= 128 && utf8[0] < 224)
         {
@@ -849,4 +825,35 @@ int decodeUTF8Encoding(_In_ char* encodedCharArray, _Out_ char** decodedCharArra
     return 0;
 exit:
     return -1;
+}*/
+
+int decodeUTF8Encoding(_In_ char* encodedCharArray, _Out_ char** decodedCharArray)
+{
+    int lengthWithEncodedChars = strlen(encodedCharArray);
+    *decodedCharArray = malloc(lengthWithEncodedChars + 1); // Allocate memory for decodedCharArray
+
+    if (!*decodedCharArray)
+    {
+        return -1; // Memory allocation failed
+    }
+
+    int j = 0;
+    for (int i = 0; i < lengthWithEncodedChars; i++)
+    {
+        unsigned char c = encodedCharArray[i];
+        if (c < 128) // ASCII character
+        {
+            (*decodedCharArray)[j++] = c;
+        }
+        else if (c < 224 && i + 1 < lengthWithEncodedChars) // 2-byte UTF-8 character
+        {
+            unsigned char c2 = encodedCharArray[++i];
+            (*decodedCharArray)[j++] = ((c & 0x1F) << 6) | (c2 & 0x3F);
+        }
+        // Add more else if blocks here for 3-byte and 4-byte UTF-8 characters if needed
+    }
+
+    (*decodedCharArray)[j] = '\0'; // Null-terminate the output string
+
+    return 0;
 }

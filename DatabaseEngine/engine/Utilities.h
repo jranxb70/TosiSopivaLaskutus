@@ -13,6 +13,11 @@
 
 unsigned long roundToNextHundreds(unsigned long num);
 
+void convertIntArrayToUnsignedCharArray(
+	_In_ int*					intArray, 
+	_Out_ unsigned char**		charArray, 
+	_In_ int					length);
+
 DB_ENGINE_LIBRARY_EXPORT int decodeUTF8Encoding(
 	_In_ char*					encodedString, 
 	_Out_ char**				decodedString);

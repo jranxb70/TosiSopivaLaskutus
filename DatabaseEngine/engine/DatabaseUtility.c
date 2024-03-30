@@ -7,7 +7,6 @@ int fetchInvoiceLineDataAsJson(SQLHSTMT* hstmtP, cJSON** rtt)
 
     SQLINTEGER lineId;
     SQLINTEGER invoiceId;
-    //SQLCHAR productName[64];
     SQLINTEGER productItemId;
     SQLINTEGER quantity;
     SQLDOUBLE price;
@@ -19,14 +18,9 @@ int fetchInvoiceLineDataAsJson(SQLHSTMT* hstmtP, cJSON** rtt)
         char* a = cJSON_Print(root);
         SQLGetData(hstmt, 1, SQL_C_SLONG, &lineId, 0, NULL);
         SQLGetData(hstmt, 2, SQL_C_SLONG, &invoiceId, 0, NULL);
-        //SQLGetData(hstmt, 3, SQL_C_CHAR, productDescription, sizeof(productDescription), NULL);
-
         SQLGetData(hstmt, 3, SQL_C_SLONG, &productItemId, 0, NULL);
-
-
         SQLGetData(hstmt, 4, SQL_C_SLONG, &quantity, 0, NULL);
         SQLGetData(hstmt, 5, SQL_C_DOUBLE, &price, 0, NULL);
-
         SQLGetData(hstmt, 6, SQL_C_CHAR, productDescription, sizeof(productDescription), NULL);
 
         ///////////////////////////////////////////
@@ -53,7 +47,6 @@ int fetchInvoiceLineDataAsJson(SQLHSTMT* hstmtP, cJSON** rtt)
         {
             arraySizeInvoices = cJSON_GetArraySize(invoices);
         }
-        //int arraySizeInvoices = cJSON_GetArraySize(invoices);
 
         cJSON* invoice = NULL;
         for (int ind = 0; ind < arraySizeInvoices; ind++)
@@ -69,6 +62,5 @@ int fetchInvoiceLineDataAsJson(SQLHSTMT* hstmtP, cJSON** rtt)
             }
         }
     }
-            //}
     return 0;
 }

@@ -521,6 +521,11 @@ int readFile(
             i++;
         }
     }
+    else
+    {
+        ret = -1;
+        goto exit;
+    }
 
     char* encodedUTF8string = NULL;
     convertIntArrayToUnsignedCharArray(integers, &encodedUTF8string, i);

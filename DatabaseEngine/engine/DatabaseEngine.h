@@ -39,6 +39,8 @@ void DisplayError(SQLCHAR* sqlState, SQLINTEGER nativeError, SQLCHAR* message, S
 extern "C" {
 #endif
 
+	void DB_ENGINE_LIBRARY_EXPORT addDBUser(char* login, char* password, char* email);
+
 	int  DB_ENGINE_LIBRARY_EXPORT addNewInvoiceData(
 		_In_ char*					invoicing_data_json, 
 		_In_ int					length);
@@ -56,7 +58,8 @@ extern "C" {
 
 		_Out_ int*					customer_id);
 
-	//void DB_ENGINE_LIBRARY_EXPORT updateCustomer(_In_ const char* customer_email);
+	void DB_ENGINE_LIBRARY_EXPORT deleteCustomer(
+		_In_ long					customer_id);
 
 	int  DB_ENGINE_LIBRARY_EXPORT getCustomer(
 		_In_ int					customer_id,

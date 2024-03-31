@@ -39,7 +39,15 @@ void DisplayError(SQLCHAR* sqlState, SQLINTEGER nativeError, SQLCHAR* message, S
 extern "C" {
 #endif
 
-	void DB_ENGINE_LIBRARY_EXPORT addDBUser(char* login, char* password, char* email);
+	int DB_ENGINE_LIBRARY_EXPORT addDBUser(
+		_In_ char*					login,
+		_In_ char*					password,
+		_In_ char*					email);
+
+	int DB_ENGINE_LIBRARY_EXPORT getDBUser(
+		_In_ char*					login,
+		_In_ char*					user_password);
+
 
 	int  DB_ENGINE_LIBRARY_EXPORT addNewInvoiceData(
 		_In_ char*					invoicing_data_json, 

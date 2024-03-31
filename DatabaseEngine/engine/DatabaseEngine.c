@@ -23,6 +23,8 @@ cJSON* root = NULL;
 #define LEN_DATE            31
 #define LEN_DUE_DATE        21
 #define LEN_DESCRIPTION     1025
+#define LEN_USER_NAME       51
+#define LEN_PASSWORD        51
 
 SQLHENV henv;  // Environment handle
 SQLHDBC hdbc;  // Connection handle
@@ -242,7 +244,10 @@ void deleteCustomer(_In_ long customer_id)
     dbClose();
 }
 
-void addDBUser(char* login, char* password, char* email, int* db_user_id)
+int addDBUser(
+    _In_ char* login, 
+    _In_ char* password, 
+    _In_ char* email)
 {
     char fileName[21] = "connectionstring.txt";
     DBERROR* err = NULL;
@@ -266,25 +271,20 @@ void addDBUser(char* login, char* password, char* email, int* db_user_id)
     char* email_decoded = NULL;
     decodeUTF8Encoding(email, &email_decoded);
 
-
-
     char query[1024];
     size_t bufferCount = 1024;
     sprintf_s(query, bufferCount,
-        "{? = CALL dbo.AddDBUser (?, ?, ?)}");
+        "{CALL dbo.AddDBUser (?, ?, ?)}");
 
     SQLHSTMT hstmt;
-    SQLINTEGER id;
 
     if (SQL_SUCCEEDED(ret)) {
         // Allocate a statement handle
         SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
 
-        SQLBindParameter(hstmt, 1, SQL_PARAM_OUTPUT, SQL_C_SLONG, SQL_INTEGER, 0, 0, &id, 0, NULL);
-
-        SQLBindParameter(hstmt, 2, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 50, 0, login_decoded, 0, NULL);
-        SQLBindParameter(hstmt, 3, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 50, 0, password_decoded, 0, NULL);
-        SQLBindParameter(hstmt, 4, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 100, 0, email_decoded, 0, NULL);
+        SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 50, 0, login_decoded, 0, NULL);
+        SQLBindParameter(hstmt, 2, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 100, 0, password_decoded, 0, NULL);
+        SQLBindParameter(hstmt, 3, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 50, 0, email_decoded, 0, NULL);
 
         // Prepare the SQL statement
         ret = SQLPrepare(hstmt, query, SQL_NTS);
@@ -298,9 +298,23 @@ void addDBUser(char* login, char* password, char* email, int* db_user_id)
                 if (SQLMoreResults(hstmt) == SQL_NO_DATA)
                 {
                     printf("SQl statement executed successfully");
-                    printf("%d", id);
-                    *db_user_id = id;
+                    ret = 0;
                 }
+            }
+            else
+            {
+                SQLCHAR sqlstate[6];
+                SQLINTEGER native_error;
+                SQLCHAR message_text[SQL_MAX_MESSAGE_LENGTH];
+                SQLSMALLINT text_length;
+
+                SQLRETURN retussi = SQLGetDiagRec(SQL_HANDLE_STMT, hstmt, 1, sqlstate, &native_error, message_text, sizeof(message_text), &text_length);
+
+                if (native_error == 2627)
+                {
+                    ret = -1; // record is a duplicate
+                }
+                printf("Error connecting to database: %s\n", retcode);
             }
             // Free the statement handle
             SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
@@ -317,6 +331,87 @@ void addDBUser(char* login, char* password, char* email, int* db_user_id)
     free(email_decoded);
 
     dbClose();
+    return ret;
+}
+
+int getDBUser(_In_ char* login, _In_ char* user_password)
+{
+    char fileName[21] = "connectionstring.txt";
+    DBERROR* err = NULL;
+    dbOpen(fileName, &err);
+
+    if (err->errorCode < 0)
+    {
+        free(err);
+        return;
+    }
+    int ret = err->errorCode;
+    free(err);
+    err = NULL;
+
+    char* login_converted = NULL;
+    decodeUTF8Encoding(login, &login_converted);
+
+    int grant_access = 0;
+
+    char query[1024];
+    size_t bufferCount = 1024;
+    sprintf_s(query, bufferCount,
+        "{CALL dbo.GetDBUserRow (?)}");
+
+    SQLHSTMT hstmt;
+
+    if (SQL_SUCCEEDED(ret)) {
+        // Allocate a statement handle
+        SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
+
+        SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 50, 0, login_converted, 0, NULL);
+
+        // Prepare the SQL statement
+        ret = SQLPrepare(hstmt, query, SQL_NTS);
+        if (SQL_SUCCEEDED(ret))
+        {
+            // Execute the query
+            ret = SQLExecute(hstmt);
+
+            if (SQL_SUCCEEDED(ret))
+            {
+                int recordsFound = 0;
+                SQLCHAR     login[LEN_USER_NAME];
+                SQLCHAR     email[LEN_EMAIL];
+                SQLCHAR     password[LEN_PASSWORD];
+
+
+                while (SQLFetch(hstmt) == SQL_SUCCESS)
+                {
+                    recordsFound = 1;
+                    SQLGetData(hstmt, 1, SQL_C_CHAR, login, sizeof(login), NULL);
+                    SQLGetData(hstmt, 2, SQL_C_CHAR, email, sizeof(email), NULL);
+                    SQLGetData(hstmt, 3, SQL_C_CHAR, password, sizeof(password), NULL);
+                }
+
+                if (recordsFound == 1)
+                {
+                    if (strcmp((char*)password, user_password) == 0)
+                    {
+                        grant_access = 1;
+                    }
+                }
+            }
+            // Free the statement handle
+            SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
+        }
+    }
+    else {
+        // Get the return code
+        SQLGetDiagRec(SQL_HANDLE_DBC, hdbc, 1, NULL, NULL, retcode, SQL_RETURN_CODE_LEN, NULL);
+        printf("Error connecting to database: %s\n", retcode);
+    }
+
+    free(login_converted);
+
+    dbClose();
+    return grant_access;
 }
 
 

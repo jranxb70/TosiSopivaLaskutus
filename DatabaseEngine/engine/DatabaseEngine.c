@@ -380,6 +380,11 @@ int getDBUser(_In_ char* login, _In_ char* user_password)
 
     SQLHSTMT hstmt;
 
+    SQLCHAR sqlstate[6];
+    SQLINTEGER native_error;
+    SQLCHAR message_text[SQL_MAX_MESSAGE_LENGTH];
+    SQLSMALLINT text_length;
+
     if (SQL_SUCCEEDED(ret)) {
         // Allocate a statement handle
         SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
@@ -424,6 +429,11 @@ int getDBUser(_In_ char* login, _In_ char* user_password)
                 {
                     grant_access = 0;
                 }
+            }
+            else
+            {
+                SQLRETURN retussi = SQLGetDiagRec(SQL_HANDLE_STMT, hstmt, 1, sqlstate, &native_error, message_text, sizeof(message_text), &text_length);
+                printf("Error executing the stored procedure: %s\n", message_text);
             }
         }
         // Free the statement handle

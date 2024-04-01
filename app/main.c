@@ -54,6 +54,38 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    char* invoicesS = NULL;
+    queryAllInvoices(1, &invoicesS);
+
+    char* tuppu = "tuppu";
+    char* user_password = "tumpeloitse";
+    int granted = getDBUser(_In_ (char*) tuppu, _In_ (char*) user_password);
+
+    free(invoicesS);
+
+    char* user = "artistimaksaa";
+    char* passwd = "kakkosnelonen";
+    char* emailU = "masa@aaltoyliopisto.fi";
+    
+    int result = addDBUser(user, passwd, emailU);
+
+
+    char* array = "\xc3\x85gren";
+
+    char* array2 = malloc(sizeof(char) * 7); // Allocate memory for array2
+
+    // Convert hexadecimal representation to normal string
+    sprintf(array2, "%s", array);
+
+    deleteCustomer(
+        _In_ (long)					16);
+    return 0;
+    
+    char* decodedCharArray = NULL;
+    decodeUTF8Encoding(array, &decodedCharArray);
+    printf("decodedCharArray: %s", decodedCharArray);
+
+    free(decodedCharArray);
     testUpdateForCustomer();
 
     char* jsonX = NULL;

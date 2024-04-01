@@ -194,7 +194,7 @@ int deleteCustomer(_In_ long customer_id)
     if (err->errorCode < 0)
     {
         free(err);
-        return;
+        return -1;
     }
     int ret = err->errorCode;
     free(err);
@@ -275,7 +275,7 @@ int addDBUser(
     if (err->errorCode < 0)
     {
         free(err);
-        return;
+        return -2;
     }
     int ret = err->errorCode;
     free(err);
@@ -362,7 +362,7 @@ int getDBUser(_In_ char* login, _In_ char* user_password)
     if (err->errorCode < 0)
     {
         free(err);
-        return;
+        return -2;
     }
     int ret = err->errorCode;
     free(err);
@@ -417,10 +417,10 @@ int getDBUser(_In_ char* login, _In_ char* user_password)
                     }
                 }
             }
+        }
             // Free the statement handle
             SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
         }
-    }
     else {
         // Get the return code
         SQLGetDiagRec(SQL_HANDLE_DBC, hdbc, 1, NULL, NULL, retcode, SQL_RETURN_CODE_LEN, NULL);
@@ -1010,6 +1010,115 @@ void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out
     SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
 
     dbClose();
+}
+
+void queryAllInvoices(int procudere_switch, char** jsonString)
+{
+    char fileName[21] = "connectionstring.txt";
+    DBERROR* err = NULL;
+    dbOpen(fileName, &err);
+
+    if (err->errorCode < 0)
+    {
+        free(err);
+        return;
+    }
+    free(err);
+    err = NULL;
+
+    SQLHSTMT hstmt;
+    SQLRETURN retcode;
+
+    // Allocate statement handle
+    retcode = SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
+
+    // Prepare stored procedure call
+    char call[256];
+    sprintf(call, "{call SelectAllInvoices(?)}");
+
+
+    //char* product_description_decoded = NULL;
+    //decodeUTF8Encoding(product_description, &product_description_decoded);
+
+    // Allocate statement handle
+    retcode = SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
+
+    SQLINTEGER sql_procudere_switch = procudere_switch;
+
+    // Bind the parameter
+    SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER, 0, 0, &sql_procudere_switch, 0, NULL);
+
+    // Execute stored procedure
+    retcode = SQLExecDirect(hstmt, (SQLCHAR*)call, SQL_NTS);
+
+    //invoice_id	customer_id	invoice_date	invoice_bankreference	invoice_subtotal	invoice_tax	invoice_total	invoice_due_date	invoice_outstanding_balance
+    // Process the invoice data
+
+    root = cJSON_CreateObject();
+    cJSON* invoices = cJSON_AddArrayToObject(root, "invoices");
+
+    do 
+    {
+        SQLINTEGER invoice_id;
+        SQLINTEGER customer_id;
+        SQLCHAR    invoice_date[LEN_DATE];
+        SQLCHAR    invoice_bankreference[LEN_BANK_REF];
+
+        SQLDOUBLE     invoice_subtotal;
+        SQLDOUBLE     invoice_tax;
+        SQLDOUBLE     invoice_total;
+
+        SQLCHAR   invoice_due_date[LEN_DUE_DATE];
+        SQLDOUBLE invoice_outstanding_balance;
+
+        while (SQLFetch(hstmt) == SQL_SUCCESS)
+        {
+            SQLGetData(hstmt, 1, SQL_C_SLONG,  &invoice_id, 0, NULL);
+            SQLGetData(hstmt, 2, SQL_C_SLONG,  &customer_id, 0, NULL);
+
+            SQLGetData(hstmt, 3, SQL_C_CHAR,   invoice_date, sizeof(invoice_date), NULL);
+            SQLGetData(hstmt, 4, SQL_C_CHAR,   invoice_bankreference, sizeof(invoice_bankreference), NULL);
+
+            SQLGetData(hstmt, 5, SQL_C_DOUBLE, &invoice_subtotal, 0, NULL);
+            SQLGetData(hstmt, 6, SQL_C_DOUBLE, &invoice_tax, 0, NULL);
+            SQLGetData(hstmt, 7, SQL_C_DOUBLE, &invoice_total, 0, NULL);
+
+            SQLLEN invoice_due_dateLen;
+
+            SQLGetData(hstmt, 8, SQL_C_CHAR,   invoice_due_date, sizeof(invoice_due_date), &invoice_due_dateLen);
+            SQLGetData(hstmt, 9, SQL_C_DOUBLE, &invoice_outstanding_balance, 0, NULL);
+
+            if (invoice_due_dateLen == SQL_NULL_DATA)
+            {
+                strcpy_s(invoice_due_date, sizeof(invoice_due_date), "N/A");
+            }
+
+            cJSON_AddNumberToObject(invoices, "invoice_id",                  invoice_id);
+            cJSON_AddNumberToObject(invoices, "customer_id",                 customer_id);
+            cJSON_AddStringToObject(invoices, "invoice_date",                invoice_date);
+            cJSON_AddStringToObject(invoices, "invoice_bankreference",       invoice_bankreference);
+
+            cJSON_AddNumberToObject(invoices, "invoice_subtotal",            invoice_subtotal);
+            cJSON_AddNumberToObject(invoices, "invoice_tax",                 invoice_tax);
+            cJSON_AddNumberToObject(invoices, "invoice_total",               invoice_total);
+
+            cJSON_AddStringToObject(invoices, "invoice_due_date",            invoice_due_date);
+            cJSON_AddNumberToObject(invoices, "invoice_outstanding_balance", invoice_outstanding_balance);
+        }
+    } while (SQLMoreResults(hstmt) == SQL_SUCCESS);
+
+    // Free the statement handle
+    SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
+
+    dbClose();
+
+    char* archieCruzPlusIida = cJSON_Print(root);
+
+    printf("%s", archieCruzPlusIida);
+
+    *jsonString = archieCruzPlusIida;
+
+    cJSON_Delete(root);
 }
 
 /**

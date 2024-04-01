@@ -237,20 +237,20 @@ int deleteCustomer(_In_ long customer_id)
                 ret = result;
             }
             else
-                {
+            {
                 SQLRETURN retussi = SQLGetDiagRec(SQL_HANDLE_STMT, hstmt, 1, sqlstate, &native_error, message_text, sizeof(message_text), &text_length);
                 printf("Error executing the stored procedure: %s\n", message_text);
             }
-                }
+        }
         else
         {
             SQLRETURN retussi = SQLGetDiagRec(SQL_HANDLE_STMT, hstmt, 1, sqlstate, &native_error, message_text, sizeof(message_text), &text_length);
             printf("Error connecting to database: %s\n", message_text);
-            }
-
-            // Free the statement handle
-            SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
         }
+
+        // Free the statement handle
+        SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
+    }
     else 
     {
         // Get the return code
@@ -418,9 +418,9 @@ int getDBUser(_In_ char* login, _In_ char* user_password)
                 }
             }
         }
-            // Free the statement handle
-            SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
-        }
+        // Free the statement handle
+        SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
+    }
     else {
         // Get the return code
         SQLGetDiagRec(SQL_HANDLE_DBC, hdbc, 1, NULL, NULL, retcode, SQL_RETURN_CODE_LEN, NULL);
@@ -1093,17 +1093,21 @@ void queryAllInvoices(int procudere_switch, char** jsonString)
                 strcpy_s(invoice_due_date, sizeof(invoice_due_date), "N/A");
             }
 
-            cJSON_AddNumberToObject(invoices, "invoice_id",                  invoice_id);
-            cJSON_AddNumberToObject(invoices, "customer_id",                 customer_id);
-            cJSON_AddStringToObject(invoices, "invoice_date",                invoice_date);
-            cJSON_AddStringToObject(invoices, "invoice_bankreference",       invoice_bankreference);
+            cJSON* invoice = cJSON_CreateObject();
 
-            cJSON_AddNumberToObject(invoices, "invoice_subtotal",            invoice_subtotal);
-            cJSON_AddNumberToObject(invoices, "invoice_tax",                 invoice_tax);
-            cJSON_AddNumberToObject(invoices, "invoice_total",               invoice_total);
+            cJSON_AddNumberToObject(invoice, "invoice_id",                  invoice_id);
+            cJSON_AddNumberToObject(invoice, "customer_id",                 customer_id);
+            cJSON_AddStringToObject(invoice, "invoice_date",                invoice_date);
+            cJSON_AddStringToObject(invoice, "invoice_bankreference",       invoice_bankreference);
 
-            cJSON_AddStringToObject(invoices, "invoice_due_date",            invoice_due_date);
-            cJSON_AddNumberToObject(invoices, "invoice_outstanding_balance", invoice_outstanding_balance);
+            cJSON_AddNumberToObject(invoice, "invoice_subtotal",            invoice_subtotal);
+            cJSON_AddNumberToObject(invoice, "invoice_tax",                 invoice_tax);
+            cJSON_AddNumberToObject(invoice, "invoice_total",               invoice_total);
+
+            cJSON_AddStringToObject(invoice, "invoice_due_date",            invoice_due_date);
+            cJSON_AddNumberToObject(invoice, "invoice_outstanding_balance", invoice_outstanding_balance);
+
+            cJSON_AddItemToArray(invoices, invoice);
         }
     } while (SQLMoreResults(hstmt) == SQL_SUCCESS);
 

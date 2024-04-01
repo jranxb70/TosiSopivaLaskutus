@@ -371,7 +371,7 @@ int getDBUser(_In_ char* login, _In_ char* user_password)
     char* login_converted = NULL;
     decodeUTF8Encoding(login, &login_converted);
 
-    int grant_access = 0;
+    int grant_access = -3;
 
     char query[1024];
     size_t bufferCount = 1024;
@@ -415,6 +415,14 @@ int getDBUser(_In_ char* login, _In_ char* user_password)
                     {
                         grant_access = 1;
                     }
+                    else
+                    {
+                        grant_access = 0;
+                    }
+                }
+                else
+                {
+                    grant_access = 0;
                 }
             }
         }

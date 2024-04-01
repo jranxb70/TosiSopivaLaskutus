@@ -33,6 +33,7 @@ SQLCHAR result[SQL_RESULT_LEN];
 SQLCHAR retcode[SQL_RETURN_CODE_LEN];
 
 char* json_data_char = NULL;
+char* json_data_invoides = NULL;
 
 /**
 * This function opens the connection to a database using an ODBC driver.
@@ -158,18 +159,27 @@ void dbClose()
 /**
 * This function ...
 */
-int free_json_data(int selector) {
+int free_json_data(int selector) 
+{
     int done = 744;
 
     if (selector == 1)
     {
         free(json_data);
         json_data = NULL;
+        done = 11;
     }
     else if (selector == 2)
     {
         free(json_data_char);
         json_data_char = NULL;
+        done = 12;
+    }
+    else if (selector == 3)
+    {
+        free(json_data_char);
+        json_data_char = NULL;
+        done = 13;
     }
     else
     {
@@ -1139,6 +1149,7 @@ void queryAllInvoices(int procudere_switch, char** jsonString)
     printf("%s", archieCruzPlusIida);
 
     *jsonString = archieCruzPlusIida;
+    json_data_char = *jsonString;
 
     cJSON_Delete(root);
 }

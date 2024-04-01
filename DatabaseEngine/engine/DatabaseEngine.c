@@ -185,7 +185,7 @@ void free_sql_error_details()
     internalErrorList = NULL;
 }
 
-void deleteCustomer(_In_ long customer_id)
+int deleteCustomer(_In_ long customer_id)
 {
     char fileName[21] = "connectionstring.txt";
     DBERROR* err = NULL;
@@ -202,21 +202,29 @@ void deleteCustomer(_In_ long customer_id)
 
     char query[1024];
     size_t bufferCount = 1024;
-    sprintf_s(query, bufferCount,
-        "{CALL dbo.DeleteCustomer (?)}");
+    sprintf_s(query, bufferCount, "EXEC dbo.DeleteCustomer ?, ?");
 
     SQLHSTMT hstmt;
     SQLINTEGER id = customer_id;
+    SQLINTEGER result = -3;
+
+    SQLCHAR sqlstate[6];
+    SQLINTEGER native_error;
+    SQLCHAR message_text[SQL_MAX_MESSAGE_LENGTH];
+    SQLSMALLINT text_length;
 
     if (SQL_SUCCEEDED(ret)) 
     {
         // Allocate a statement handle
         SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
 
-        SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER, 0, 0, &id, 0, NULL);
-
         // Prepare the SQL statement
         ret = SQLPrepare(hstmt, query, SQL_NTS);
+
+        ret = SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER, 0, 0, &id,     0, NULL);
+        ret = SQLBindParameter(hstmt, 2, SQL_PARAM_OUTPUT, SQL_C_LONG, SQL_INTEGER, 0, 0, &result, 0, NULL);
+
+
         if (SQL_SUCCEEDED(ret))
         {
             // Execute the query
@@ -224,24 +232,35 @@ void deleteCustomer(_In_ long customer_id)
 
             if (SQL_SUCCEEDED(ret))
             {
-                if (SQLMoreResults(hstmt) == SQL_NO_DATA)
-                {
-                    printf("SQl statement executed successfully");
-                    printf("%d", id);
-                }
+                printf("Status: %d\n", result);
+
+                ret = result;
             }
+            else
+                {
+                SQLRETURN retussi = SQLGetDiagRec(SQL_HANDLE_STMT, hstmt, 1, sqlstate, &native_error, message_text, sizeof(message_text), &text_length);
+                printf("Error executing the stored procedure: %s\n", message_text);
+            }
+                }
+        else
+        {
+            SQLRETURN retussi = SQLGetDiagRec(SQL_HANDLE_STMT, hstmt, 1, sqlstate, &native_error, message_text, sizeof(message_text), &text_length);
+            printf("Error connecting to database: %s\n", message_text);
+            }
+
             // Free the statement handle
             SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
         }
-    }
     else 
     {
         // Get the return code
-        SQLGetDiagRec(SQL_HANDLE_DBC, hdbc, 1, NULL, NULL, retcode, SQL_RETURN_CODE_LEN, NULL);
-        printf("Error connecting to database: %s\n", retcode);
+        SQLGetDiagRec(SQL_HANDLE_STMT, hstmt, 1, sqlstate, &native_error, message_text, sizeof(message_text), &text_length);
+        printf("Error connecting to database: %s\n", message_text);
     }
 
     dbClose();
+
+    return ret;
 }
 
 int addDBUser(

@@ -66,7 +66,7 @@ extern "C" {
 
 		_Out_ int*					customer_id);
 
-	void DB_ENGINE_LIBRARY_EXPORT deleteCustomer(
+	int  DB_ENGINE_LIBRARY_EXPORT deleteCustomer(
 		_In_ long					customer_id);
 
 	int  DB_ENGINE_LIBRARY_EXPORT getCustomer(

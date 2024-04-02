@@ -1112,7 +1112,10 @@ int queryInvoices(
     SQLINTEGER sql_procudere_switch =   procudere_switch;
     SQLINTEGER sql_sorting =            sorting;
 
-    SQLINTEGER sql_procudere_switch = procudere_switch;
+    SQLCHAR sqlstate[6];
+    SQLINTEGER native_error;
+    SQLCHAR message_text[SQL_MAX_MESSAGE_LENGTH];
+    SQLSMALLINT text_length;
 
     // Bind the parameter
     SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT, SQL_C_SLONG,            SQL_INTEGER,          0, 0, &sql_procudere_switch,              0, NULL);

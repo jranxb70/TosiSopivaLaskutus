@@ -16,12 +16,14 @@ int fetchInvoiceLineDataAsJson(SQLHSTMT* hstmtP, cJSON** rtt)
     while (SQLFetch(hstmt) == SQL_SUCCESS) 
     {
         char* a = cJSON_Print(root);
+        SQLLEN productDescriptionLen;
+
         SQLGetData(hstmt, 1, SQL_C_SLONG, &lineId, 0, NULL);
         SQLGetData(hstmt, 2, SQL_C_SLONG, &invoiceId, 0, NULL);
         SQLGetData(hstmt, 3, SQL_C_SLONG, &productItemId, 0, NULL);
         SQLGetData(hstmt, 4, SQL_C_SLONG, &quantity, 0, NULL);
         SQLGetData(hstmt, 5, SQL_C_DOUBLE, &price, 0, NULL);
-        SQLGetData(hstmt, 6, SQL_C_CHAR, productDescription, sizeof(productDescription), NULL);
+        SQLGetData(hstmt, 6, SQL_C_CHAR, productDescription, sizeof(productDescription), &productDescriptionLen);
 
         ///////////////////////////////////////////
 
@@ -32,7 +34,14 @@ int fetchInvoiceLineDataAsJson(SQLHSTMT* hstmtP, cJSON** rtt)
         cJSON_AddNumberToObject(invoice_line, "quantity", quantity);
         cJSON_AddNumberToObject(invoice_line, "price", price);
 
-        cJSON_AddStringToObject(invoice_line, "product_description", productDescription);
+        if (productDescriptionLen == SQL_NULL_DATA)
+        {
+            cJSON_AddStringToObject(invoice_line, "product_description", "N/A");
+        }
+        else
+        {
+            cJSON_AddStringToObject(invoice_line, "product_description", productDescription);
+        }
 
         // If invoices is null we are (probably) dealing with queryInvoiceById
         cJSON* invoices = cJSON_GetObjectItem(root, "invoices");

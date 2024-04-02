@@ -1140,13 +1140,13 @@ int queryInvoices(
     if (SQL_SUCCEEDED(retcode))
     {
 
-    // Process the invoice data
+        // Process the invoice data
 
-    root = cJSON_CreateObject();
-    cJSON* invoices = cJSON_AddArrayToObject(root, "invoices");
+        root = cJSON_CreateObject();
+        cJSON* invoices = cJSON_AddArrayToObject(root, "invoices");
 
-    do 
-    {
+        do
+        {
             SQLINTEGER      invoice_id;
             SQLINTEGER      customer_id;
             SQLCHAR         invoice_date[LEN_DATE];
@@ -1159,29 +1159,29 @@ int queryInvoices(
             SQLCHAR         invoice_due_date[LEN_DUE_DATE];
             SQLDOUBLE       invoice_outstanding_balance;
 
-        while (SQLFetch(hstmt) == SQL_SUCCESS)
-        {
+            while (SQLFetch(hstmt) == SQL_SUCCESS)
+            {
                 SQLGetData(hstmt, 1, SQL_C_SLONG, &invoice_id, 0, NULL);
                 SQLGetData(hstmt, 2, SQL_C_SLONG, &customer_id, 0, NULL);
 
                 SQLGetData(hstmt, 3, SQL_C_CHAR, invoice_date, sizeof(invoice_date), NULL);
                 SQLGetData(hstmt, 4, SQL_C_CHAR, invoice_bankreference, sizeof(invoice_bankreference), NULL);
 
-            SQLGetData(hstmt, 5, SQL_C_DOUBLE, &invoice_subtotal, 0, NULL);
-            SQLGetData(hstmt, 6, SQL_C_DOUBLE, &invoice_tax, 0, NULL);
-            SQLGetData(hstmt, 7, SQL_C_DOUBLE, &invoice_total, 0, NULL);
+                SQLGetData(hstmt, 5, SQL_C_DOUBLE, &invoice_subtotal, 0, NULL);
+                SQLGetData(hstmt, 6, SQL_C_DOUBLE, &invoice_tax, 0, NULL);
+                SQLGetData(hstmt, 7, SQL_C_DOUBLE, &invoice_total, 0, NULL);
 
-            SQLLEN invoice_due_dateLen;
+                SQLLEN invoice_due_dateLen;
 
                 SQLGetData(hstmt, 8, SQL_C_CHAR, invoice_due_date, sizeof(invoice_due_date), &invoice_due_dateLen);
-            SQLGetData(hstmt, 9, SQL_C_DOUBLE, &invoice_outstanding_balance, 0, NULL);
+                SQLGetData(hstmt, 9, SQL_C_DOUBLE, &invoice_outstanding_balance, 0, NULL);
 
-            if (invoice_due_dateLen == SQL_NULL_DATA)
-            {
-                strcpy_s(invoice_due_date, sizeof(invoice_due_date), "N/A");
-            }
+                if (invoice_due_dateLen == SQL_NULL_DATA)
+                {
+                    strcpy_s(invoice_due_date, sizeof(invoice_due_date), "N/A");
+                }
 
-            cJSON* invoice = cJSON_CreateObject();
+                cJSON* invoice = cJSON_CreateObject();
 
                 cJSON_AddNumberToObject(invoice, "invoice_id", invoice_id);
                 cJSON_AddNumberToObject(invoice, "customer_id", customer_id);
@@ -1193,11 +1193,11 @@ int queryInvoices(
                 cJSON_AddNumberToObject(invoice, "invoice_total", invoice_total);
 
                 cJSON_AddStringToObject(invoice, "invoice_due_date", invoice_due_date);
-            cJSON_AddNumberToObject(invoice, "invoice_outstanding_balance", invoice_outstanding_balance);
+                cJSON_AddNumberToObject(invoice, "invoice_outstanding_balance", invoice_outstanding_balance);
 
-            cJSON_AddItemToArray(invoices, invoice);
-        }
-    } while (SQLMoreResults(hstmt) == SQL_SUCCESS);
+                cJSON_AddItemToArray(invoices, invoice);
+            }
+        } while (SQLMoreResults(hstmt) == SQL_SUCCESS);
     }
     else
     {

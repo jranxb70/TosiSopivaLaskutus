@@ -27,6 +27,8 @@ cJSON* root = NULL;
 #define LEN_PASSWORD                    51
 
 #define INVALID_SWITCH_VALUE            -101
+#define INVALID_DATE_VALUE              -102
+#define INVALID_SORTING_VALUE           -103
 
 SQLHENV henv;  // Environment handle
 SQLHDBC hdbc;  // Connection handle
@@ -1043,7 +1045,7 @@ void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out
 }
 
 int queryInvoices(
-    _In_ long	    procudere_switch,
+    _In_ long	    procedure_switch,
     _In_ char*      start_date,
     _In_ char*      end_date,
     _In_ long	    sorting,
@@ -1061,10 +1063,22 @@ int queryInvoices(
     free(err);
     err = NULL;
 
-    if (procudere_switch != 1 && procudere_switch != 2)
+    if (procedure_switch != 1 && procedure_switch != 2 && procedure_switch != 3)
     {
         dbClose();
         return INVALID_SWITCH_VALUE;
+    }
+
+    if (procedure_switch == 3 && (start_date == NULL || end_date == NULL))
+    {
+        dbClose();
+        return INVALID_DATE_VALUE;
+    }
+
+    if (procedure_switch == 3 && (sorting != -1 && sorting != 1))
+    {
+        dbClose();
+        return INVALID_SORTING_VALUE;
     }
 
     SQLHSTMT hstmt;
@@ -1106,10 +1120,7 @@ int queryInvoices(
         resRet = stringToTimestamp(end_date, &sql_end_date);
     }
 
-    //char* product_description_decoded = NULL;
-    //decodeUTF8Encoding(product_description, &product_description_decoded);
-
-    SQLINTEGER sql_procudere_switch =   procudere_switch;
+    SQLINTEGER sql_procudere_switch =   procedure_switch;
     SQLINTEGER sql_sorting =            sorting;
 
     SQLCHAR sqlstate[6];
@@ -1207,6 +1218,7 @@ int queryInvoices(
     json_data_char = *jsonString;
 
     cJSON_Delete(root);
+    return 0;
 }
 
 /**

@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
     }
 
     char* invoicesS = NULL;
-    queryInvoices(1, NULL, NULL, 0, &invoicesS);
+    queryInvoices(3, "2024-03-01 0:00:00.0000000", "2024-03-31 0:00:00.0000000", DESCENDING, &invoicesS);
 
     char* tuppu = "tuppu";
     char* user_password = "tumpeloitse";

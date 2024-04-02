@@ -21,6 +21,9 @@
 #define false 0
 #define bool int
 
+#define ASCENDING                       1
+#define DESCENDING                      -1
+
 node_t* internalErrorList = NULL;
 
 enum FailedFunction { ErrFuncNone = 0, ErrFuncSQLAllocHandleA, ErrFuncSQLSetEnvAttrA, ErrFuncSQLAllocHandleB, ErrFuncSQLDriverConnectA, ErrFunc_getConnectionStringA, ErrFunc_getWorkingDirA };

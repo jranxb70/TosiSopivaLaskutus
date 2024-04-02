@@ -9,22 +9,24 @@
 char* json_data = NULL;
 cJSON* root = NULL;
 
-#define SQL_RESULT_LEN       240
-#define SQL_RETURN_CODE_LEN 1000
+#define SQL_RESULT_LEN                  240
+#define SQL_RETURN_CODE_LEN             1000
 
-#define LEN_FIRST_NAME      51
-#define LEN_LAST_NAME       51
-#define LEN_ADDRESS         101
-#define LEN_ZIP             6
-#define LEN_CITY            51 
-#define LEN_PHONE           21
-#define LEN_EMAIL           101
-#define LEN_BANK_REF        21
-#define LEN_DATE            31
-#define LEN_DUE_DATE        21
-#define LEN_DESCRIPTION     1025
-#define LEN_USER_NAME       51
-#define LEN_PASSWORD        51
+#define LEN_FIRST_NAME                  51
+#define LEN_LAST_NAME                   51
+#define LEN_ADDRESS                     101
+#define LEN_ZIP                         6
+#define LEN_CITY                        51 
+#define LEN_PHONE                       21
+#define LEN_EMAIL                       101
+#define LEN_BANK_REF                    21
+#define LEN_DATE                        31
+#define LEN_DUE_DATE                    21
+#define LEN_DESCRIPTION                 1025
+#define LEN_USER_NAME                   51
+#define LEN_PASSWORD                    51
+
+#define INVALID_SWITCH_VALUE            -101
 
 SQLHENV henv;  // Environment handle
 SQLHDBC hdbc;  // Connection handle
@@ -1040,7 +1042,12 @@ void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out
     dbClose();
 }
 
-void queryAllInvoices(int procudere_switch, char** jsonString)
+int queryInvoices(
+    _In_ long	    procudere_switch,
+    _In_ char*      start_date,
+    _In_ char*      end_date,
+    _In_ long	    sorting,
+    _Out_ char**    jsonString)
 {
     char fileName[21] = "connectionstring.txt";
     DBERROR* err = NULL;
@@ -1049,10 +1056,16 @@ void queryAllInvoices(int procudere_switch, char** jsonString)
     if (err->errorCode < 0)
     {
         free(err);
-        return;
+        return -2;
     }
     free(err);
     err = NULL;
+
+    if (procudere_switch != 1 && procudere_switch != 2)
+    {
+        dbClose();
+        return INVALID_SWITCH_VALUE;
+    }
 
     SQLHSTMT hstmt;
     SQLRETURN retcode;
@@ -1062,24 +1075,57 @@ void queryAllInvoices(int procudere_switch, char** jsonString)
 
     // Prepare stored procedure call
     char call[256];
-    sprintf(call, "{call SelectAllInvoices(?)}");
+    sprintf(call, "{call SelectInvoices(?, ?, ?, ?)}");
 
+    SQL_TIMESTAMP_STRUCT   sql_start_date;
+    sql_start_date.year = 1970;
+    sql_start_date.month = 1;
+    sql_start_date.day = 1;
+    sql_start_date.hour = 0;
+    sql_start_date.minute = 0;
+    sql_start_date.second = 0;
+    sql_start_date.fraction = 0;
+
+    SQL_TIMESTAMP_STRUCT   sql_end_date;
+    sql_end_date.year = 1970;
+    sql_end_date.month = 1;
+    sql_end_date.day = 1;
+    sql_end_date.hour = 0;
+    sql_end_date.minute = 0;
+    sql_end_date.second = 0;
+    sql_end_date.fraction = 0;
+    int resRet = -9;
+
+    if (start_date != NULL)
+    {
+        resRet = stringToTimestamp(start_date, &sql_start_date);
+    }
+
+    if (end_date != NULL)
+    {
+        resRet = stringToTimestamp(end_date, &sql_end_date);
+    }
 
     //char* product_description_decoded = NULL;
     //decodeUTF8Encoding(product_description, &product_description_decoded);
 
-    // Allocate statement handle
-    retcode = SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
+    SQLINTEGER sql_procudere_switch =   procudere_switch;
+    SQLINTEGER sql_sorting =            sorting;
 
     SQLINTEGER sql_procudere_switch = procudere_switch;
 
     // Bind the parameter
-    SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER, 0, 0, &sql_procudere_switch, 0, NULL);
+    SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT, SQL_C_SLONG,            SQL_INTEGER,          0, 0, &sql_procudere_switch,              0, NULL);
+    SQLBindParameter(hstmt, 2, SQL_PARAM_INPUT, SQL_C_TYPE_TIMESTAMP,   SQL_TYPE_TIMESTAMP,   0, 7, &sql_start_date,                    0, NULL);
+    SQLBindParameter(hstmt, 3, SQL_PARAM_INPUT, SQL_C_TYPE_TIMESTAMP,   SQL_TYPE_TIMESTAMP,   0, 7, &sql_end_date,                      0, NULL);
+    SQLBindParameter(hstmt, 4, SQL_PARAM_INPUT, SQL_C_SLONG,            SQL_INTEGER,          0, 0, &sql_sorting,                       0, NULL);
 
     // Execute stored procedure
     retcode = SQLExecDirect(hstmt, (SQLCHAR*)call, SQL_NTS);
 
-    //invoice_id	customer_id	invoice_date	invoice_bankreference	invoice_subtotal	invoice_tax	invoice_total	invoice_due_date	invoice_outstanding_balance
+    if (SQL_SUCCEEDED(retcode))
+    {
+
     // Process the invoice data
 
     root = cJSON_CreateObject();
@@ -1087,25 +1133,25 @@ void queryAllInvoices(int procudere_switch, char** jsonString)
 
     do 
     {
-        SQLINTEGER invoice_id;
-        SQLINTEGER customer_id;
-        SQLCHAR    invoice_date[LEN_DATE];
-        SQLCHAR    invoice_bankreference[LEN_BANK_REF];
+            SQLINTEGER      invoice_id;
+            SQLINTEGER      customer_id;
+            SQLCHAR         invoice_date[LEN_DATE];
+            SQLCHAR         invoice_bankreference[LEN_BANK_REF];
 
-        SQLDOUBLE     invoice_subtotal;
-        SQLDOUBLE     invoice_tax;
-        SQLDOUBLE     invoice_total;
+            SQLDOUBLE       invoice_subtotal;
+            SQLDOUBLE       invoice_tax;
+            SQLDOUBLE       invoice_total;
 
-        SQLCHAR   invoice_due_date[LEN_DUE_DATE];
-        SQLDOUBLE invoice_outstanding_balance;
+            SQLCHAR         invoice_due_date[LEN_DUE_DATE];
+            SQLDOUBLE       invoice_outstanding_balance;
 
         while (SQLFetch(hstmt) == SQL_SUCCESS)
         {
-            SQLGetData(hstmt, 1, SQL_C_SLONG,  &invoice_id, 0, NULL);
-            SQLGetData(hstmt, 2, SQL_C_SLONG,  &customer_id, 0, NULL);
+                SQLGetData(hstmt, 1, SQL_C_SLONG, &invoice_id, 0, NULL);
+                SQLGetData(hstmt, 2, SQL_C_SLONG, &customer_id, 0, NULL);
 
-            SQLGetData(hstmt, 3, SQL_C_CHAR,   invoice_date, sizeof(invoice_date), NULL);
-            SQLGetData(hstmt, 4, SQL_C_CHAR,   invoice_bankreference, sizeof(invoice_bankreference), NULL);
+                SQLGetData(hstmt, 3, SQL_C_CHAR, invoice_date, sizeof(invoice_date), NULL);
+                SQLGetData(hstmt, 4, SQL_C_CHAR, invoice_bankreference, sizeof(invoice_bankreference), NULL);
 
             SQLGetData(hstmt, 5, SQL_C_DOUBLE, &invoice_subtotal, 0, NULL);
             SQLGetData(hstmt, 6, SQL_C_DOUBLE, &invoice_tax, 0, NULL);
@@ -1113,7 +1159,7 @@ void queryAllInvoices(int procudere_switch, char** jsonString)
 
             SQLLEN invoice_due_dateLen;
 
-            SQLGetData(hstmt, 8, SQL_C_CHAR,   invoice_due_date, sizeof(invoice_due_date), &invoice_due_dateLen);
+                SQLGetData(hstmt, 8, SQL_C_CHAR, invoice_due_date, sizeof(invoice_due_date), &invoice_due_dateLen);
             SQLGetData(hstmt, 9, SQL_C_DOUBLE, &invoice_outstanding_balance, 0, NULL);
 
             if (invoice_due_dateLen == SQL_NULL_DATA)
@@ -1123,21 +1169,27 @@ void queryAllInvoices(int procudere_switch, char** jsonString)
 
             cJSON* invoice = cJSON_CreateObject();
 
-            cJSON_AddNumberToObject(invoice, "invoice_id",                  invoice_id);
-            cJSON_AddNumberToObject(invoice, "customer_id",                 customer_id);
-            cJSON_AddStringToObject(invoice, "invoice_date",                invoice_date);
-            cJSON_AddStringToObject(invoice, "invoice_bankreference",       invoice_bankreference);
+                cJSON_AddNumberToObject(invoice, "invoice_id", invoice_id);
+                cJSON_AddNumberToObject(invoice, "customer_id", customer_id);
+                cJSON_AddStringToObject(invoice, "invoice_date", invoice_date);
+                cJSON_AddStringToObject(invoice, "invoice_bankreference", invoice_bankreference);
 
-            cJSON_AddNumberToObject(invoice, "invoice_subtotal",            invoice_subtotal);
-            cJSON_AddNumberToObject(invoice, "invoice_tax",                 invoice_tax);
-            cJSON_AddNumberToObject(invoice, "invoice_total",               invoice_total);
+                cJSON_AddNumberToObject(invoice, "invoice_subtotal", invoice_subtotal);
+                cJSON_AddNumberToObject(invoice, "invoice_tax", invoice_tax);
+                cJSON_AddNumberToObject(invoice, "invoice_total", invoice_total);
 
-            cJSON_AddStringToObject(invoice, "invoice_due_date",            invoice_due_date);
+                cJSON_AddStringToObject(invoice, "invoice_due_date", invoice_due_date);
             cJSON_AddNumberToObject(invoice, "invoice_outstanding_balance", invoice_outstanding_balance);
 
             cJSON_AddItemToArray(invoices, invoice);
         }
     } while (SQLMoreResults(hstmt) == SQL_SUCCESS);
+    }
+    else
+    {
+        SQLRETURN retussi = SQLGetDiagRec(SQL_HANDLE_STMT, hstmt, 1, sqlstate, &native_error, message_text, sizeof(message_text), &text_length);
+        printf("Error executing the stored procedure: %s\n", message_text);
+    }
 
     // Free the statement handle
     SQLFreeHandle(SQL_HANDLE_STMT, hstmt);

@@ -86,7 +86,12 @@ extern "C" {
 		_Out_ char**				jsonString, 
 		_Out_ node_t**				errorList);
 
-	void DB_ENGINE_LIBRARY_EXPORT queryAllInvoices(int procudere_switch, char** jsonString);
+	int  DB_ENGINE_LIBRARY_EXPORT queryInvoices(
+		_In_ long					procudere_switch, 
+		_In_ char*					start_date, 
+		_In_ char*					end_date, 
+		_In_ long					sorting, 
+		_Out_ char**				jsonString);
 
 	void DB_ENGINE_LIBRARY_EXPORT updateCustomer(
 		_In_ int					customer_id, 

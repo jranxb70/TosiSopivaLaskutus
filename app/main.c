@@ -55,13 +55,13 @@ int main(int argc, char *argv[])
     }
 
     char* invoicesS = NULL;
-    queryAllInvoices(1, &invoicesS);
+    queryInvoices(1, NULL, NULL, 0, &invoicesS);
 
     char* tuppu = "tuppu";
     char* user_password = "tumpeloitse";
     int granted = getDBUser(_In_ (char*) tuppu, _In_ (char*) user_password);
 
-    free(invoicesS);
+    int resultOf = free_json_data(3);
 
     char* user = "artistimaksaa";
     char* passwd = "kakkosnelonen";

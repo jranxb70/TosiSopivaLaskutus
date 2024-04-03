@@ -53,9 +53,14 @@ int main(int argc, char *argv[])
         fprintf(stdout, "%s\n", "Insufficient input - enter a value.");
         return 1;
     }
+    char* jsonStringCompany = NULL;
+    int company_id = 1;
+    getCompyny(_In_ (int) company_id, _Out_ (char**) &jsonStringCompany);
+
+    free_json_data(4);
 
     char* invoicesS = NULL;
-    queryInvoices(3, "2024-03-01 0:00:00.0000000", "2024-03-31 0:00:00.0000000", DESCENDING, &invoicesS);
+    queryInvoices(3, "2024-03-01 0:00:00.0000000", "2024-03-31 23:59:59.9999999", DESCENDING, &invoicesS);
 
     char* tuppu = "tuppu";
     char* user_password = "tumpeloitse";

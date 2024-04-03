@@ -51,6 +51,8 @@ extern "C" {
 		_In_ char*					login,
 		_In_ char*					user_password);
 
+	void DB_ENGINE_LIBRARY_EXPORT getCompyny(_In_ int company_id, _Out_ char** jsonStringCompany);
+
 
 	int  DB_ENGINE_LIBRARY_EXPORT addNewInvoiceData(
 		_In_ char*					invoicing_data_json, 

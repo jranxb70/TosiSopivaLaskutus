@@ -3,15 +3,10 @@
 #include "Utilities.h"
 
 
-/**
-* This data is global due to another function must be able to free the memory.
-*/
-char* json_data = NULL;
-cJSON* root = NULL;
-
 #define SQL_RESULT_LEN                  240
 #define SQL_RETURN_CODE_LEN             1000
 
+#define LEN_COMPANY_NAME                31
 #define LEN_FIRST_NAME                  51
 #define LEN_LAST_NAME                   51
 #define LEN_ADDRESS                     101
@@ -36,8 +31,16 @@ SQLHDBC hdbc;  // Connection handle
 SQLCHAR result[SQL_RESULT_LEN];
 SQLCHAR retcode[SQL_RETURN_CODE_LEN];
 
-char* json_data_char = NULL;
-char* json_data_invoides = NULL;
+/**
+* This data is global due to another function must be able to free the memory.
+*/
+char* g_json_data = NULL;
+
+char* g_customer_json_data = NULL;
+char* g_invoice_json_data = NULL;
+char* g_company_json_data = NULL;
+char* g_invoices_by_customer_json_data = NULL;
+
 
 /**
 * This function opens the connection to a database using an ODBC driver.
@@ -169,21 +172,33 @@ int free_json_data(int selector)
 
     if (selector == 1)
     {
-        free(json_data);
-        json_data = NULL;
+        free(g_json_data);
+        g_json_data = NULL;
         done = 11;
     }
     else if (selector == 2)
     {
-        free(json_data_char);
-        json_data_char = NULL;
+        free(g_customer_json_data);
+        g_customer_json_data = NULL;
         done = 12;
     }
     else if (selector == 3)
     {
-        free(json_data_char);
-        json_data_char = NULL;
+        free(g_invoice_json_data);
+        g_invoice_json_data = NULL;
         done = 13;
+    }
+    else if (selector == 4)
+    {
+        free(g_company_json_data);
+        g_company_json_data = NULL;
+        done = 14;
+    }
+    else if (selector == 5)
+    {
+        free(g_invoices_by_customer_json_data);
+        g_invoices_by_customer_json_data = NULL;
+        done = 15;
     }
     else
     {
@@ -199,6 +214,9 @@ void free_sql_error_details()
     internalErrorList = NULL;
 }
 
+/**
+ * return -1, if function fails, 0 if no record is affected, 1, if a record is deleted.
+*/
 int deleteCustomer(_In_ long customer_id)
 {
     char fileName[21] = "connectionstring.txt";
@@ -213,6 +231,8 @@ int deleteCustomer(_In_ long customer_id)
     int ret = err->errorCode;
     free(err);
     err = NULL;
+
+    int countDeleted = -1;
 
     char query[1024];
     size_t bufferCount = 1024;
@@ -248,17 +268,17 @@ int deleteCustomer(_In_ long customer_id)
             {
                 printf("Status: %d\n", result);
 
-                ret = result;
+                countDeleted = result;
             }
             else
             {
-                SQLRETURN retussi = SQLGetDiagRec(SQL_HANDLE_STMT, hstmt, 1, sqlstate, &native_error, message_text, sizeof(message_text), &text_length);
+                SQLRETURN retDiagRec = SQLGetDiagRec(SQL_HANDLE_STMT, hstmt, 1, sqlstate, &native_error, message_text, sizeof(message_text), &text_length);
                 printf("Error executing the stored procedure: %s\n", message_text);
             }
         }
         else
         {
-            SQLRETURN retussi = SQLGetDiagRec(SQL_HANDLE_STMT, hstmt, 1, sqlstate, &native_error, message_text, sizeof(message_text), &text_length);
+            SQLRETURN retDiagRec = SQLGetDiagRec(SQL_HANDLE_STMT, hstmt, 1, sqlstate, &native_error, message_text, sizeof(message_text), &text_length);
             printf("Error connecting to database: %s\n", message_text);
         }
 
@@ -274,7 +294,7 @@ int deleteCustomer(_In_ long customer_id)
 
     dbClose();
 
-    return ret;
+    return countDeleted;
 }
 
 int addDBUser(
@@ -306,8 +326,12 @@ int addDBUser(
 
     char query[1024];
     size_t bufferCount = 1024;
-    sprintf_s(query, bufferCount,
-        "{CALL dbo.AddDBUser (?, ?, ?)}");
+    sprintf_s(query, bufferCount, "{CALL dbo.AddDBUser (?, ?, ?)}");
+
+    SQLCHAR sqlstate[6];
+    SQLINTEGER native_error;
+    SQLCHAR message_text[SQL_MAX_MESSAGE_LENGTH];
+    SQLSMALLINT text_length;
 
     SQLHSTMT hstmt;
 
@@ -336,27 +360,23 @@ int addDBUser(
             }
             else
             {
-                SQLCHAR sqlstate[6];
-                SQLINTEGER native_error;
-                SQLCHAR message_text[SQL_MAX_MESSAGE_LENGTH];
-                SQLSMALLINT text_length;
-
                 SQLRETURN retussi = SQLGetDiagRec(SQL_HANDLE_STMT, hstmt, 1, sqlstate, &native_error, message_text, sizeof(message_text), &text_length);
 
                 if (native_error == 2627)
                 {
                     ret = -1; // record is a duplicate
                 }
-                printf("Error connecting to database: %s\n", retcode);
+                printf("(Warning) Function addDBUser: %s\n", message_text);
             }
             // Free the statement handle
             SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
         }
     }
-    else {
+    else 
+    {
         // Get the return code
-        SQLGetDiagRec(SQL_HANDLE_DBC, hdbc, 1, NULL, NULL, retcode, SQL_RETURN_CODE_LEN, NULL);
-        printf("Error connecting to database: %s\n", retcode);
+        SQLGetDiagRec(SQL_HANDLE_STMT, hstmt, 1, sqlstate, &native_error, message_text, sizeof(message_text), &text_length);
+        printf("Error opening the connecting to database: %s\n", message_text);
     }
 
     free(login_decoded);
@@ -389,8 +409,7 @@ int getDBUser(_In_ char* login, _In_ char* user_password)
 
     char query[1024];
     size_t bufferCount = 1024;
-    sprintf_s(query, bufferCount,
-        "{CALL dbo.GetDBUserRow (?)}");
+    sprintf_s(query, bufferCount, "{CALL dbo.GetDBUserRow (?)}");
 
     SQLHSTMT hstmt;
 
@@ -586,7 +605,7 @@ void queryCustomers(_Out_ char** jsonString, _Out_ node_t** errorList)
 
     *errorList = internalErrorList;
 
-    root = cJSON_CreateObject();
+    cJSON* root = cJSON_CreateObject();
 
     cJSON_AddArrayToObject(root, "customers");
 
@@ -623,7 +642,6 @@ void queryCustomers(_Out_ char** jsonString, _Out_ node_t** errorList)
         cJSON_AddStringToObject(customer, "zip", zip);
         cJSON_AddStringToObject(customer, "city", city);
 
-
         // null email null phone situation
 
         if (phoneLen == SQL_NULL_DATA) 
@@ -649,6 +667,7 @@ void queryCustomers(_Out_ char** jsonString, _Out_ node_t** errorList)
     }
 
     *jsonString = cJSON_Print(root);
+    g_json_data = *jsonString;
 
     cJSON_Delete(root);
 
@@ -693,7 +712,7 @@ void queryInvoiceById(_In_ int invoice_id, _Out_ char** jsonString, _Out_ node_t
 
     *errorList = internalErrorList;
 
-    root = cJSON_CreateObject();
+    cJSON* root = cJSON_CreateObject();
     cJSON* invoice = NULL;
 
     // Process the rows and print to screen
@@ -835,6 +854,7 @@ void queryInvoiceById(_In_ int invoice_id, _Out_ char** jsonString, _Out_ node_t
     printf("%s", archieCruzPlusIida);
 
     *jsonString = archieCruzPlusIida;
+    g_invoice_json_data = *jsonString;
 
     cJSON_Delete(root);
 
@@ -842,6 +862,96 @@ void queryInvoiceById(_In_ int invoice_id, _Out_ char** jsonString, _Out_ node_t
     SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
 
     dbClose();
+}
+
+void getCompyny(_In_ int company_id, _Out_ char** jsonStringCompany)
+{
+    char fileName[21] = "connectionstring.txt";
+    DBERROR* err = NULL;
+    dbOpen(fileName, &err);
+
+    if (err->errorCode < 0)
+    {
+        free(err);
+        return;
+    }
+    free(err);
+    err = NULL;
+
+    SQLHSTMT hstmt;
+    SQLRETURN retcode;
+
+    SQLINTEGER sql_company_id = company_id;
+
+    // Allocate statement handle
+    retcode = SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
+
+    // Prepare stored procedure call
+    char call[256];
+    sprintf(call, "{call GetCompany(?)}");
+
+    // Bind the parameter
+    SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER, 0, 0, &sql_company_id, 0, NULL);
+
+    // Execute stored procedure
+    retcode = SQLExecDirect(hstmt, (SQLCHAR*)call, SQL_NTS);
+
+    cJSON* root = cJSON_CreateObject();
+    cJSON* company_name = NULL;
+
+    if (retcode == SQL_SUCCESS || retcode == SQL_SUCCESS_WITH_INFO)
+    {
+        do 
+        {
+            SQLINTEGER  companyId;
+            SQLCHAR     companyName[LEN_COMPANY_NAME];
+
+            SQLCHAR     address[LEN_ADDRESS];
+            SQLCHAR     zip[LEN_ZIP];
+            SQLCHAR     city[LEN_CITY];
+            SQLCHAR     phone[LEN_PHONE];
+            SQLCHAR     businessId[LEN_EMAIL];
+
+            while (SQLFetch(hstmt) == SQL_SUCCESS)
+            {
+                SQLGetData(hstmt, 1, SQL_C_SLONG, &companyId, 0, NULL);
+                SQLGetData(hstmt, 2, SQL_C_CHAR, companyName, sizeof(companyName), NULL);
+                SQLGetData(hstmt, 3, SQL_C_CHAR, address, sizeof(address), NULL);
+                SQLGetData(hstmt, 4, SQL_C_CHAR, zip, sizeof(zip), NULL);
+                SQLGetData(hstmt, 5, SQL_C_CHAR, city, sizeof(city), NULL);
+                SQLGetData(hstmt, 6, SQL_C_CHAR, phone, sizeof(phone), NULL);
+                SQLGetData(hstmt, 7, SQL_C_CHAR, businessId, sizeof(businessId), NULL);
+
+                char* decodedCompanyName = NULL;
+                decodeUTF8Encoding(companyName, &decodedCompanyName);
+                printf("decodedCharArray: %s", decodedCompanyName);
+
+                cJSON_AddNumberToObject(root, "company_id", companyId);
+                company_name = cJSON_AddStringToObject(root, "company_name", decodedCompanyName);
+                cJSON_AddStringToObject(root, "company_address", address);
+                cJSON_AddStringToObject(root, "company_zip", zip);
+                cJSON_AddStringToObject(root, "company_city", city);
+                cJSON_AddStringToObject(root, "company_phone", phone);
+                cJSON_AddStringToObject(root, "company_business_id", businessId);
+
+                free(decodedCompanyName);
+            }
+        } while (SQLMoreResults(hstmt) == SQL_SUCCESS);
+    }
+    char* archieCruzPlusIida = cJSON_Print(root);
+
+    printf("%s", archieCruzPlusIida);
+
+    *jsonStringCompany = archieCruzPlusIida;
+    g_company_json_data = *jsonStringCompany;
+
+    cJSON_Delete(root);
+
+    // Free the statement handle
+    SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
+
+    dbClose();
+    return;
 }
 
 /**
@@ -883,7 +993,7 @@ void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out
 
     *errorList = internalErrorList;
 
-    root = cJSON_CreateObject();
+    cJSON* root = cJSON_CreateObject();
     cJSON* invoices = NULL;
 
     // Process the rows and print to screen
@@ -1035,6 +1145,7 @@ void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out
     printf("%s", archieCruzPlusIida);
 
     *jsonString = archieCruzPlusIida;
+    g_invoices_by_customer_json_data = *jsonString;
 
     cJSON_Delete(root);
 
@@ -1137,12 +1248,11 @@ int queryInvoices(
     // Execute stored procedure
     retcode = SQLExecDirect(hstmt, (SQLCHAR*)call, SQL_NTS);
 
+    cJSON* root = cJSON_CreateObject();
+
     if (SQL_SUCCEEDED(retcode))
     {
-
         // Process the invoice data
-
-        root = cJSON_CreateObject();
         cJSON* invoices = cJSON_AddArrayToObject(root, "invoices");
 
         do
@@ -1215,7 +1325,7 @@ int queryInvoices(
     printf("%s", archieCruzPlusIida);
 
     *jsonString = archieCruzPlusIida;
-    json_data_char = *jsonString;
+    g_invoice_json_data = *jsonString;
 
     cJSON_Delete(root);
     return 0;
@@ -1579,7 +1689,7 @@ int getCustomerCharOut(
     if (!(err < 0))
     {
         *customer_data = cJSON_Print(customer_data_pointer);
-        json_data_char = *customer_data;
+        g_customer_json_data = *customer_data;
     }
     return err;
 }

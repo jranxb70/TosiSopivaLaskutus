@@ -51,7 +51,7 @@ extern "C" {
 		_In_ char*					login,
 		_In_ char*					user_password);
 
-	void DB_ENGINE_LIBRARY_EXPORT getCompyny(_In_ int company_id, _Out_ char** jsonStringCompany);
+	void DB_ENGINE_LIBRARY_EXPORT getCompany(_In_ int company_id, _Out_ char** jsonStringCompany);
 
 
 	int  DB_ENGINE_LIBRARY_EXPORT addNewInvoiceData(
@@ -108,7 +108,7 @@ extern "C" {
 		_In_ char*					customer_phone,
 		_In_ char*					customer_email);
 
-	int  DB_ENGINE_LIBRARY_EXPORT free_json_data(int selector);
+	int  DB_ENGINE_LIBRARY_EXPORT free_json_data(/*int selector*/);
 
 	void DB_ENGINE_LIBRARY_EXPORT free_sql_error_details();
 

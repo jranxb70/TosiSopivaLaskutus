@@ -15,10 +15,9 @@ void queryInvoiceByInvoiceId()
     int invoice_id = 1;
     node_t* errs = NULL;
     queryInvoiceById(invoice_id, &jsonString, &errs);
-    int succeeded = free_json_data(1);
+    int succeeded = free_json_data();
     free_sql_error_details();
 
-    free(jsonString);
 }
 
 void testUpdateForCustomer()
@@ -55,9 +54,9 @@ int main(int argc, char *argv[])
     }
     char* jsonStringCompany = NULL;
     int company_id = 1;
-    getCompyny(_In_ (int) company_id, _Out_ (char**) &jsonStringCompany);
+    getCompany(_In_ (int) company_id, _Out_ (char**) &jsonStringCompany);
 
-    free_json_data(4);
+    free_json_data();
 
     char* invoicesS = NULL;
     queryInvoices(3, "2024-03-01 0:00:00.0000000", "2024-03-31 23:59:59.9999999", DESCENDING, &invoicesS);
@@ -66,7 +65,7 @@ int main(int argc, char *argv[])
     char* user_password = "tumpeloitse";
     int granted = getDBUser(_In_ (char*) tuppu, _In_ (char*) user_password);
 
-    int resultOf = free_json_data(3);
+    int resultOf = free_json_data();
 
     char* user = "artistimaksaa";
     char* passwd = "kakkosnelonen";
@@ -96,7 +95,7 @@ int main(int argc, char *argv[])
     char* jsonX = NULL;
     node_t* errsX = NULL;
     queryCustomers(&jsonX, &errsX);
-    int succeededX = free_json_data(1);
+    int succeededX = free_json_data();
     free_sql_error_details();
 
     free(jsonX);
@@ -147,7 +146,7 @@ int main(int argc, char *argv[])
     char* customer_data_1st = NULL;
     int e = getCustomerCharOut(1, &customer_data_1st);
 
-    int success = free_json_data(2);
+    int success = free_json_data();
 
     //free(customer_data_1st);
 
@@ -179,7 +178,7 @@ int main(int argc, char *argv[])
     char* json = NULL;
     node_t* errs = NULL;
     queryInvoicesByCustomer(customer_id, &json, &errs);
-    int succeeded = free_json_data(1);
+    int succeeded = free_json_data();
     free_sql_error_details();
 
     free(json);

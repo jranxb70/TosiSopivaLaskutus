@@ -34,12 +34,12 @@ SQLCHAR retcode[SQL_RETURN_CODE_LEN];
 /**
 * This data is global due to another function must be able to free the memory.
 */
-char* g_json_data = NULL;
+char* global_json_data = NULL;
 
-char* g_customer_json_data = NULL;
+/*char* g_customer_json_data = NULL;
 char* g_invoice_json_data = NULL;
 char* g_company_json_data = NULL;
-char* g_invoices_by_customer_json_data = NULL;
+char* g_invoices_by_customer_json_data = NULL;*/
 
 
 /**
@@ -166,17 +166,17 @@ void dbClose()
 /**
 * This function ...
 */
-int free_json_data(int selector) 
+int free_json_data(/*int selector*/)
 {
     int done = 744;
 
-    if (selector == 1)
-    {
-        free(g_json_data);
-        g_json_data = NULL;
+    //if (selector == 1)
+    //{
+        free(global_json_data);
+        global_json_data = NULL;
         done = 11;
-    }
-    else if (selector == 2)
+   // }
+    /*else if (selector == 2)
     {
         free(g_customer_json_data);
         g_customer_json_data = NULL;
@@ -199,11 +199,11 @@ int free_json_data(int selector)
         free(g_invoices_by_customer_json_data);
         g_invoices_by_customer_json_data = NULL;
         done = 15;
-    }
-    else
-    {
-        done = -123;
-    }
+    }*/
+    //else
+    //{
+    //    done = -123;
+    //}
 
     return done;
 }
@@ -667,7 +667,7 @@ void queryCustomers(_Out_ char** jsonString, _Out_ node_t** errorList)
     }
 
     *jsonString = cJSON_Print(root);
-    g_json_data = *jsonString;
+    global_json_data = *jsonString;
 
     cJSON_Delete(root);
 
@@ -854,7 +854,7 @@ void queryInvoiceById(_In_ int invoice_id, _Out_ char** jsonString, _Out_ node_t
     printf("%s", archieCruzPlusIida);
 
     *jsonString = archieCruzPlusIida;
-    g_invoice_json_data = *jsonString;
+    /*g_invoice_json_data*/ global_json_data = *jsonString;
 
     cJSON_Delete(root);
 
@@ -864,7 +864,7 @@ void queryInvoiceById(_In_ int invoice_id, _Out_ char** jsonString, _Out_ node_t
     dbClose();
 }
 
-void getCompyny(_In_ int company_id, _Out_ char** jsonStringCompany)
+void getCompany(_In_ int company_id, _Out_ char** jsonStringCompany)
 {
     char fileName[21] = "connectionstring.txt";
     DBERROR* err = NULL;
@@ -943,7 +943,7 @@ void getCompyny(_In_ int company_id, _Out_ char** jsonStringCompany)
     printf("%s", archieCruzPlusIida);
 
     *jsonStringCompany = archieCruzPlusIida;
-    g_company_json_data = *jsonStringCompany;
+    /*g_company_json_data*/ global_json_data = *jsonStringCompany;
 
     cJSON_Delete(root);
 
@@ -1145,7 +1145,7 @@ void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out
     printf("%s", archieCruzPlusIida);
 
     *jsonString = archieCruzPlusIida;
-    g_invoices_by_customer_json_data = *jsonString;
+    /*g_invoices_by_customer_json_data*/ global_json_data = *jsonString;
 
     cJSON_Delete(root);
 
@@ -1325,7 +1325,7 @@ int queryInvoices(
     printf("%s", archieCruzPlusIida);
 
     *jsonString = archieCruzPlusIida;
-    g_invoice_json_data = *jsonString;
+    /*g_invoice_json_data*/ global_json_data  = *jsonString;
 
     cJSON_Delete(root);
     return 0;
@@ -1689,7 +1689,7 @@ int getCustomerCharOut(
     if (!(err < 0))
     {
         *customer_data = cJSON_Print(customer_data_pointer);
-        g_customer_json_data = *customer_data;
+        /*g_customer_json_data*/ global_json_data = *customer_data;
     }
     return err;
 }

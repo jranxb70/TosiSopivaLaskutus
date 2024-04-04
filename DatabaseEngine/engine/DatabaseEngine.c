@@ -405,6 +405,9 @@ int getDBUser(_In_ char* login, _In_ char* user_password)
     char* login_converted = NULL;
     decodeUTF8Encoding(login, &login_converted);
 
+    char* password_converted = NULL;
+    decodeUTF8Encoding(user_password, &password_converted);
+
     int grant_access = -3;
 
     char query[1024];
@@ -479,6 +482,7 @@ int getDBUser(_In_ char* login, _In_ char* user_password)
     }
 
     free(login_converted);
+    free(password_converted);
 
     dbClose();
     return grant_access;
@@ -636,11 +640,11 @@ void queryCustomers(_Out_ char** jsonString, _Out_ node_t** errorList)
         cJSON* customer = cJSON_CreateObject();
 
         cJSON_AddNumberToObject(customer, "customer_id", customerId);
-        cJSON_AddStringToObject(customer, "first_name", firstName);
-        cJSON_AddStringToObject(customer, "last_name", lastName);
-        cJSON_AddStringToObject(customer, "address", address);
-        cJSON_AddStringToObject(customer, "zip", zip);
-        cJSON_AddStringToObject(customer, "city", city);
+        cJSON_AddStringToObject(customer, "first_name",  firstName);
+        cJSON_AddStringToObject(customer, "last_name",   lastName);
+        cJSON_AddStringToObject(customer, "address",     address);
+        cJSON_AddStringToObject(customer, "zip",         zip);
+        cJSON_AddStringToObject(customer, "city",        city);
 
         // null email null phone situation
 
@@ -922,19 +926,19 @@ void getCompany(_In_ int company_id, _Out_ char** jsonStringCompany)
                 SQLGetData(hstmt, 6, SQL_C_CHAR, phone, sizeof(phone), NULL);
                 SQLGetData(hstmt, 7, SQL_C_CHAR, businessId, sizeof(businessId), NULL);
 
-                char* decodedCompanyName = NULL;
-                decodeUTF8Encoding(companyName, &decodedCompanyName);
-                printf("decodedCharArray: %s", decodedCompanyName);
+                //char* decodedCompanyName = NULL;
+                //decodeUTF8Encoding(companyName, &decodedCompanyName);
+                //printf("decodedCharArray: %s", decodedCompanyName);
 
                 cJSON_AddNumberToObject(root, "company_id", companyId);
-                company_name = cJSON_AddStringToObject(root, "company_name", decodedCompanyName);
+                company_name = cJSON_AddStringToObject(root, "company_name", companyName);
                 cJSON_AddStringToObject(root, "company_address", address);
                 cJSON_AddStringToObject(root, "company_zip", zip);
                 cJSON_AddStringToObject(root, "company_city", city);
                 cJSON_AddStringToObject(root, "company_phone", phone);
                 cJSON_AddStringToObject(root, "company_business_id", businessId);
 
-                free(decodedCompanyName);
+                //free(decodedCompanyName);
             }
         } while (SQLMoreResults(hstmt) == SQL_SUCCESS);
     }

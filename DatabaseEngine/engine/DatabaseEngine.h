@@ -74,6 +74,9 @@ extern "C" {
 	int  DB_ENGINE_LIBRARY_EXPORT deleteCustomer(
 		_In_ long					customer_id);
 
+	int  DB_ENGINE_LIBRARY_EXPORT deleteInvoice(
+		_In_ long					invoice_id);
+
 	int  DB_ENGINE_LIBRARY_EXPORT getCustomer(
 		_In_ int					customer_id,
 		_Out_ cJSON**				customer_data);
@@ -108,7 +111,7 @@ extern "C" {
 		_In_ char*					customer_phone,
 		_In_ char*					customer_email);
 
-	int  DB_ENGINE_LIBRARY_EXPORT free_json_data(/*int selector*/);
+	int  DB_ENGINE_LIBRARY_EXPORT free_json_data();
 
 	void DB_ENGINE_LIBRARY_EXPORT free_sql_error_details();
 
@@ -120,7 +123,6 @@ extern "C" {
 	void DB_ENGINE_LIBRARY_EXPORT addInvoiceLine(
 		_In_ bool                   open_database,
 		_In_ int                    invoice_id,
-		//_In_ char* invoiceline_product,
 		_In_ int                    product_item_id,
 		_In_ int                    invoiceline_quantity,
 		_In_ double                 invoiceline_price,

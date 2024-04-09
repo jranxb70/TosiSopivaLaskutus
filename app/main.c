@@ -52,6 +52,9 @@ int main(int argc, char *argv[])
         fprintf(stdout, "%s\n", "Insufficient input - enter a value.");
         return 1;
     }
+
+    int d = deleteInvoice(52);
+
     char* jsonStringCompany = NULL;
     int company_id = 1;
     getCompany(_In_ (int) company_id, _Out_ (char**) &jsonStringCompany);

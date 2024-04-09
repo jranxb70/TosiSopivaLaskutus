@@ -36,11 +36,6 @@ SQLCHAR retcode[SQL_RETURN_CODE_LEN];
 */
 char* global_json_data = NULL;
 
-/*char* g_customer_json_data = NULL;
-char* g_invoice_json_data = NULL;
-char* g_company_json_data = NULL;
-char* g_invoices_by_customer_json_data = NULL;*/
-
 
 /**
 * This function opens the connection to a database using an ODBC driver.
@@ -166,44 +161,13 @@ void dbClose()
 /**
 * This function ...
 */
-int free_json_data(/*int selector*/)
+int free_json_data()
 {
     int done = 744;
 
-    //if (selector == 1)
-    //{
-        free(global_json_data);
-        global_json_data = NULL;
-        done = 11;
-   // }
-    /*else if (selector == 2)
-    {
-        free(g_customer_json_data);
-        g_customer_json_data = NULL;
-        done = 12;
-    }
-    else if (selector == 3)
-    {
-        free(g_invoice_json_data);
-        g_invoice_json_data = NULL;
-        done = 13;
-    }
-    else if (selector == 4)
-    {
-        free(g_company_json_data);
-        g_company_json_data = NULL;
-        done = 14;
-    }
-    else if (selector == 5)
-    {
-        free(g_invoices_by_customer_json_data);
-        g_invoices_by_customer_json_data = NULL;
-        done = 15;
-    }*/
-    //else
-    //{
-    //    done = -123;
-    //}
+    free(global_json_data);
+    global_json_data = NULL;
+    done = 11;
 
     return done;
 }
@@ -286,6 +250,93 @@ int deleteCustomer(_In_ long customer_id)
         SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
     }
     else 
+    {
+        // Get the return code
+        SQLGetDiagRec(SQL_HANDLE_STMT, hstmt, 1, sqlstate, &native_error, message_text, sizeof(message_text), &text_length);
+        printf("Error connecting to database: %s\n", message_text);
+    }
+
+    dbClose();
+
+    return countDeleted;
+}
+
+/**
+ * This function deletes an invoice according to an invoice id and, if exist, every 
+ * invoice_line related to the invoice.
+ * 
+ * return -1, if function fails, 0 if no record is affected, 1, if a record is deleted.
+*/
+int deleteInvoice(_In_ long invoice_id)
+{
+    char fileName[21] = "connectionstring.txt";
+    DBERROR* err = NULL;
+    dbOpen(fileName, &err);
+
+    if (err->errorCode < 0)
+    {
+        free(err);
+        return -1;
+    }
+    int ret = err->errorCode;
+    free(err);
+    err = NULL;
+
+    int countDeleted = -1;
+
+    char query[1024];
+    size_t bufferCount = 1024;
+    sprintf_s(query, bufferCount, "EXEC dbo.DeleteInvoiceAndLines ?, ?, ?");
+
+    SQLHSTMT hstmt;
+    SQLINTEGER id = invoice_id;
+    SQLINTEGER invoiceCountResult = -3;
+    SQLINTEGER invoiceLineCountResult = -3;
+
+    SQLCHAR sqlstate[6];
+    SQLINTEGER native_error;
+    SQLCHAR message_text[SQL_MAX_MESSAGE_LENGTH];
+    SQLSMALLINT text_length;
+
+    if (SQL_SUCCEEDED(ret))
+    {
+        // Allocate a statement handle
+        SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
+
+        // Prepare the SQL statement
+        ret = SQLPrepare(hstmt, query, SQL_NTS);
+
+        ret = SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT,  SQL_C_SLONG, SQL_INTEGER, 0, 0, &id,                     0, NULL);
+        ret = SQLBindParameter(hstmt, 2, SQL_PARAM_OUTPUT, SQL_C_LONG,  SQL_INTEGER, 0, 0, &invoiceCountResult,     0, NULL);
+        ret = SQLBindParameter(hstmt, 3, SQL_PARAM_OUTPUT, SQL_C_LONG,  SQL_INTEGER, 0, 0, &invoiceLineCountResult, 0, NULL);
+
+        if (SQL_SUCCEEDED(ret))
+        {
+            // Execute the query
+            ret = SQLExecute(hstmt);
+
+            if (SQL_SUCCEEDED(ret))
+            {
+                // Process all result sets
+                while (SQLMoreResults(hstmt) != SQL_NO_DATA);
+                countDeleted = invoiceCountResult + invoiceLineCountResult;
+            }
+            else
+            {
+                SQLRETURN retDiagRec = SQLGetDiagRec(SQL_HANDLE_STMT, hstmt, 1, sqlstate, &native_error, message_text, sizeof(message_text), &text_length);
+                printf("Error executing the stored procedure: %s\n", message_text);
+            }
+        }
+        else
+        {
+            SQLRETURN retDiagRec = SQLGetDiagRec(SQL_HANDLE_STMT, hstmt, 1, sqlstate, &native_error, message_text, sizeof(message_text), &text_length);
+            printf("Error connecting to database: %s\n", message_text);
+        }
+
+        // Free the statement handle
+        SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
+    }
+    else
     {
         // Get the return code
         SQLGetDiagRec(SQL_HANDLE_STMT, hstmt, 1, sqlstate, &native_error, message_text, sizeof(message_text), &text_length);

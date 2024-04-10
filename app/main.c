@@ -53,6 +53,8 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    int del = updateInvoice(311, 1, "2024-03-01 0:00:00.0000000", "12783", 0.00, 0.00, 0.00, "2024-03-15", 0.00);
+    
     int d = deleteInvoice(52);
 
     char* jsonStringCompany = NULL;
@@ -110,10 +112,10 @@ int main(int argc, char *argv[])
     printf("%s\n", argv[1]);
 
     char firstName[50] = "Testi";
-    char lastName[50] = "Kommunisti";
-    char address[50] = "Huhtalantie 50";
-    char zip[50] = "60200";
-    char city[50] = "Seinäjoki";
+    char lastName[50]  = "Kommunisti";
+    char address[50]   = "Huhtalantie 50";
+    char zip[50]       = "60200";
+    char city[50]      = "Seinäjoki";
 
     char phone[20]     = "964-120089";
     char email[100]    = "testi.kommunisti@kommarit.fi";

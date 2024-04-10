@@ -74,6 +74,17 @@ extern "C" {
 	int  DB_ENGINE_LIBRARY_EXPORT deleteCustomer(
 		_In_ long					customer_id);
 
+	int DB_ENGINE_LIBRARY_EXPORT updateInvoice(
+		_In_ int					invoice_id,
+		_In_ int					customer_id,
+		_In_ char*					invoice_date,
+		_In_ char*					invoice_bankreference,
+		_In_ double					invoice_subtotal,
+		_In_ double					invoice_tax,
+		_In_ double					invoice_total,
+		_In_ char*					invoice_due_date,
+		_In_ double					invoice_outstanding_balance);
+
 	int  DB_ENGINE_LIBRARY_EXPORT deleteInvoice(
 		_In_ long					invoice_id);
 

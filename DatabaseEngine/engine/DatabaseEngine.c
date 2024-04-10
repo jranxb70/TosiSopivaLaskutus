@@ -348,6 +348,117 @@ int deleteInvoice(_In_ long invoice_id)
     return countDeleted;
 }
 
+/**
+ * This function awakes a corresponding stored procedure from the Sql Server and executes it. An invoice data will be updated by the parameter values.
+ * 
+ * return -3 if something goes wrong, 0 if no rows are affected and 1, if a row is updated.
+ */
+int updateInvoice(
+    _In_ int    invoice_id,
+    _In_ int    customer_id,
+    _In_ char*  invoice_date,
+    _In_ char*  invoice_bankreference,
+    _In_ double invoice_subtotal,
+    _In_ double invoice_tax,
+    _In_ double invoice_total,
+    _In_ char*  invoice_due_date,
+    _In_ double invoice_outstanding_balance)
+{
+    int functionReturnValue = -3;
+    char fileName[21] = "connectionstring.txt";
+    DBERROR* err = NULL;
+    dbOpen(fileName, &err);
+
+    if (err->errorCode < 0)
+    {
+        free(err);
+        return;
+    }
+    int ret = err->errorCode;
+    free(err);
+    err = NULL;
+
+    SQL_TIMESTAMP_STRUCT myTimestamp;
+    stringToTimestamp(invoice_date, &myTimestamp);
+
+    SQL_DATE_STRUCT invoiceDueDate;
+    stringToDate(invoice_due_date, &invoiceDueDate);
+
+    char query[1024];
+    size_t bufferCount = 1024;
+    sprintf_s(query, bufferCount,
+        "{CALL dbo.UpdateInvoice (?, ?, ?, ?, ?, ?, ?, ?, ?)}");
+
+    SQLHSTMT   hstmt;
+    SQLINTEGER id = invoice_id;
+    SQLINTEGER sql_customer_id = customer_id;
+    SQLDOUBLE  sql_invoice_outstanding_balance = invoice_outstanding_balance;
+
+    SQLCHAR sqlstate[6];
+    SQLINTEGER native_error;
+    SQLCHAR message_text[SQL_MAX_MESSAGE_LENGTH];
+    SQLSMALLINT text_length;
+
+    if (SQL_SUCCEEDED(ret)) {
+        // Allocate a statement handle
+        SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
+
+        // Prepare the SQL statement
+        ret = SQLPrepare(hstmt, query, SQL_NTS);
+
+        SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER,                       0,  0, &id,                                 0, NULL);
+        SQLBindParameter(hstmt, 2, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER,                       0,  0, &sql_customer_id,                    0, NULL);
+        SQLBindParameter(hstmt, 3, SQL_PARAM_INPUT, SQL_C_TYPE_TIMESTAMP, SQL_TYPE_TIMESTAMP,       0,  7, &myTimestamp,                        0, NULL);
+        SQLBindParameter(hstmt, 4, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR,                        20, 0, invoice_bankreference,               0, NULL);
+
+
+        SQLBindParameter(hstmt, 5, SQL_PARAM_INPUT, SQL_C_DOUBLE, SQL_DECIMAL,                      10, 2, &invoice_subtotal,                   0, NULL);
+        SQLBindParameter(hstmt, 6, SQL_PARAM_INPUT, SQL_C_DOUBLE, SQL_DECIMAL,                      10, 2, &invoice_tax,                        0, NULL);
+        SQLBindParameter(hstmt, 7, SQL_PARAM_INPUT, SQL_C_DOUBLE, SQL_DECIMAL,                      10, 2, &invoice_total,                      0, NULL);
+
+        SQLBindParameter(hstmt, 8, SQL_PARAM_INPUT, SQL_C_TYPE_DATE, SQL_TYPE_DATE,                 0,  0, &invoiceDueDate,                     0, NULL);
+
+        SQLBindParameter(hstmt, 9, SQL_PARAM_INPUT, SQL_C_DOUBLE, SQL_DECIMAL,                      10, 2, &sql_invoice_outstanding_balance,    0, NULL);
+
+        if (SQL_SUCCEEDED(ret))
+        {
+            // Execute the query
+            ret = SQLExecute(hstmt);
+
+            if (SQL_SUCCEEDED(ret))
+            {
+                if (SQLMoreResults(hstmt) == SQL_NO_DATA)
+                {
+                    printf("SQL operations ready");
+                    functionReturnValue = 1;
+                }
+            }
+            else if (ret == SQL_NO_DATA)
+            {
+                printf("No data was found to update. Sql operation successful");
+                functionReturnValue = 0;
+            }
+            else
+            {
+                SQLRETURN retval = SQLGetDiagRec(SQL_HANDLE_STMT, hstmt, 1, sqlstate, &native_error, message_text, sizeof(message_text), &text_length);
+                printf("ERROR MSG: %s\n", message_text);
+            }
+        }
+
+        // Free the statement handle
+        SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
+    }
+    else 
+    {
+        // Get the return code
+        SQLGetDiagRec(SQL_HANDLE_DBC, hdbc, 1, NULL, NULL, retcode, SQL_RETURN_CODE_LEN, NULL);
+        printf("Error connecting to database: %s\n", retcode);
+    }
+
+    dbClose();
+    return functionReturnValue;
+}
+
 int addDBUser(
     _In_ char* login, 
     _In_ char* password, 

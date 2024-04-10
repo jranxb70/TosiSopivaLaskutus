@@ -115,8 +115,8 @@ int main(int argc, char *argv[])
     char zip[50] = "60200";
     char city[50] = "Seinäjoki";
 
-    char phone[20] = "964-120089";
-    char email[100] = "testi.kommunisti@kommarit.fi";
+    char phone[20]     = "964-120089";
+    char email[100]    = "testi.kommunisti@kommarit.fi";
 
     int customer_id = 1;
     int invoice_id = -1;

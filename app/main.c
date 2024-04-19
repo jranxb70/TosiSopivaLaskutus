@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
     sprintf(array2, "%s", array);
 
     deleteCustomer(
-        _In_ (long)					16);
+        _In_ (long)					10);
     return 0;
     
     char* decodedCharArray = NULL;

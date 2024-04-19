@@ -65,6 +65,11 @@ void dbOpen(
     (*dbErr)->errorInt = 0;
     (*dbErr)->failedFunction = ErrFuncNone;
 
+    SQLCHAR sqlstate[6];
+    SQLINTEGER native_error;
+    SQLCHAR message_text[SQL_MAX_MESSAGE_LENGTH];
+    SQLSMALLINT text_length;
+
     // Allocate an environment handle
     SQLRETURN retHandle = SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &henv);
     if (retHandle != SQL_SUCCESS && retHandle != SQL_SUCCESS_WITH_INFO) {
@@ -116,7 +121,9 @@ void dbOpen(
         //Connect to the database
         SQLRETURN retConnect = SQLDriverConnect(hdbc, NULL, (SQLCHAR*)connectionStringW, SQL_NTS, NULL, 0, NULL, SQL_DRIVER_NOPROMPT);
         if (retConnect != SQL_SUCCESS && retConnect != SQL_SUCCESS_WITH_INFO) {
-            fprintf(stderr, "Error connecting to SQL Server\n");
+            SQLRETURN retDiagRec = SQLGetDiagRec(SQL_HANDLE_DBC, hdbc, 1, sqlstate, &native_error, message_text, sizeof(message_text), &text_length);
+            printf("Error connecting to database: %s\n", message_text);
+
             SQLFreeHandle(SQL_HANDLE_DBC, hdbc);
             SQLFreeHandle(SQL_HANDLE_ENV, henv);
             (*dbErr)->errorCode = retConnect;
@@ -211,50 +218,47 @@ int deleteCustomer(_In_ long customer_id)
     SQLCHAR message_text[SQL_MAX_MESSAGE_LENGTH];
     SQLSMALLINT text_length;
 
-    if (SQL_SUCCEEDED(ret)) 
+
+    // Allocate a statement handle
+    SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
+
+    // Prepare the SQL statement
+    ret = SQLPrepare(hstmt, query, SQL_NTS);
+
+    ret = SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER, 0, 0, &id,     0, NULL);
+    ret = SQLBindParameter(hstmt, 2, SQL_PARAM_OUTPUT, SQL_C_LONG, SQL_INTEGER, 0, 0, &result, 0, NULL);
+
+
+    if (SQL_SUCCEEDED(ret))
     {
-        // Allocate a statement handle
-        SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
-
-        // Prepare the SQL statement
-        ret = SQLPrepare(hstmt, query, SQL_NTS);
-
-        ret = SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER, 0, 0, &id,     0, NULL);
-        ret = SQLBindParameter(hstmt, 2, SQL_PARAM_OUTPUT, SQL_C_LONG, SQL_INTEGER, 0, 0, &result, 0, NULL);
-
+        // Execute the query
+        ret = SQLExecute(hstmt);
 
         if (SQL_SUCCEEDED(ret))
         {
-            // Execute the query
-            ret = SQLExecute(hstmt);
+            printf("Status: %d\n", result);
 
-            if (SQL_SUCCEEDED(ret))
-            {
-                printf("Status: %d\n", result);
-
-                countDeleted = result;
-            }
-            else
-            {
-                SQLRETURN retDiagRec = SQLGetDiagRec(SQL_HANDLE_STMT, hstmt, 1, sqlstate, &native_error, message_text, sizeof(message_text), &text_length);
-                printf("Error executing the stored procedure: %s\n", message_text);
-            }
+            countDeleted = result;
         }
         else
         {
             SQLRETURN retDiagRec = SQLGetDiagRec(SQL_HANDLE_STMT, hstmt, 1, sqlstate, &native_error, message_text, sizeof(message_text), &text_length);
-            printf("Error connecting to database: %s\n", message_text);
-        }
+            printf("Error executing the stored procedure: %s\n", message_text);
 
-        // Free the statement handle
-        SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
+            if ((strcmp(sqlstate, "23000") == 0) && native_error == 547)
+            {
+                countDeleted = 0;
+            }
+        }
     }
-    else 
+    else
     {
-        // Get the return code
-        SQLGetDiagRec(SQL_HANDLE_STMT, hstmt, 1, sqlstate, &native_error, message_text, sizeof(message_text), &text_length);
+        SQLRETURN retDiagRec = SQLGetDiagRec(SQL_HANDLE_STMT, hstmt, 1, sqlstate, &native_error, message_text, sizeof(message_text), &text_length);
         printf("Error connecting to database: %s\n", message_text);
     }
+
+    // Free the statement handle
+    SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
 
     dbClose();
 
@@ -298,50 +302,43 @@ int deleteInvoice(_In_ long invoice_id)
     SQLCHAR message_text[SQL_MAX_MESSAGE_LENGTH];
     SQLSMALLINT text_length;
 
+
+    // Allocate a statement handle
+    SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
+
+    // Prepare the SQL statement
+    ret = SQLPrepare(hstmt, query, SQL_NTS);
+
+    ret = SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT,  SQL_C_SLONG, SQL_INTEGER, 0, 0, &id,                     0, NULL);
+    ret = SQLBindParameter(hstmt, 2, SQL_PARAM_OUTPUT, SQL_C_LONG,  SQL_INTEGER, 0, 0, &invoiceCountResult,     0, NULL);
+    ret = SQLBindParameter(hstmt, 3, SQL_PARAM_OUTPUT, SQL_C_LONG,  SQL_INTEGER, 0, 0, &invoiceLineCountResult, 0, NULL);
+
     if (SQL_SUCCEEDED(ret))
     {
-        // Allocate a statement handle
-        SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
-
-        // Prepare the SQL statement
-        ret = SQLPrepare(hstmt, query, SQL_NTS);
-
-        ret = SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT,  SQL_C_SLONG, SQL_INTEGER, 0, 0, &id,                     0, NULL);
-        ret = SQLBindParameter(hstmt, 2, SQL_PARAM_OUTPUT, SQL_C_LONG,  SQL_INTEGER, 0, 0, &invoiceCountResult,     0, NULL);
-        ret = SQLBindParameter(hstmt, 3, SQL_PARAM_OUTPUT, SQL_C_LONG,  SQL_INTEGER, 0, 0, &invoiceLineCountResult, 0, NULL);
+        // Execute the query
+        ret = SQLExecute(hstmt);
 
         if (SQL_SUCCEEDED(ret))
         {
-            // Execute the query
-            ret = SQLExecute(hstmt);
-
-            if (SQL_SUCCEEDED(ret))
-            {
-                // Process all result sets
-                while (SQLMoreResults(hstmt) != SQL_NO_DATA);
-                countDeleted = invoiceCountResult + invoiceLineCountResult;
-            }
-            else
-            {
-                SQLRETURN retDiagRec = SQLGetDiagRec(SQL_HANDLE_STMT, hstmt, 1, sqlstate, &native_error, message_text, sizeof(message_text), &text_length);
-                printf("Error executing the stored procedure: %s\n", message_text);
-            }
+            // Process all result sets
+            while (SQLMoreResults(hstmt) != SQL_NO_DATA);
+            countDeleted = invoiceCountResult + invoiceLineCountResult;
         }
         else
         {
             SQLRETURN retDiagRec = SQLGetDiagRec(SQL_HANDLE_STMT, hstmt, 1, sqlstate, &native_error, message_text, sizeof(message_text), &text_length);
-            printf("Error connecting to database: %s\n", message_text);
+            printf("Error executing the stored procedure: %s\n", message_text);
         }
-
-        // Free the statement handle
-        SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
     }
     else
     {
-        // Get the return code
-        SQLGetDiagRec(SQL_HANDLE_STMT, hstmt, 1, sqlstate, &native_error, message_text, sizeof(message_text), &text_length);
+        SQLRETURN retDiagRec = SQLGetDiagRec(SQL_HANDLE_STMT, hstmt, 1, sqlstate, &native_error, message_text, sizeof(message_text), &text_length);
         printf("Error connecting to database: %s\n", message_text);
     }
+
+    // Free the statement handle
+    SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
+
 
     dbClose();
 
@@ -688,49 +685,42 @@ void updateCustomer(
     
     char query[1024];
     size_t bufferCount = 1024;
-    sprintf_s(query, bufferCount,
-        "{CALL dbo.UpdateCustomer (?, ?, ?, ?, ?, ?, ?, ?)}");
+    sprintf_s(query, bufferCount, "{CALL dbo.UpdateCustomer (?, ?, ?, ?, ?, ?, ?, ?)}");
 
     SQLHSTMT hstmt;
     SQLINTEGER id = customer_id;
 
-    if (SQL_SUCCEEDED(ret)) {
-        // Allocate a statement handle
-        SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
+    // Allocate a statement handle
+    SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
 
-        SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT,  SQL_C_SLONG, SQL_INTEGER, 0,   0, &id,                             0, NULL);
-        SQLBindParameter(hstmt, 2, SQL_PARAM_INPUT,  SQL_C_CHAR,  SQL_VARCHAR, 50,  0, customer_firstName_converted,    0, NULL);
-        SQLBindParameter(hstmt, 3, SQL_PARAM_INPUT,  SQL_C_CHAR,  SQL_VARCHAR, 50,  0, customer_lastName_converted,     0, NULL);
-        SQLBindParameter(hstmt, 4, SQL_PARAM_INPUT,  SQL_C_CHAR,  SQL_VARCHAR, 100, 0, customer_address_converted,      0, NULL);
-        SQLBindParameter(hstmt, 5, SQL_PARAM_INPUT,  SQL_C_CHAR,  SQL_VARCHAR, 6,   0, customer_zip,                    0, NULL);
-        SQLBindParameter(hstmt, 6, SQL_PARAM_INPUT,  SQL_C_CHAR,  SQL_VARCHAR, 50,  0, customer_city_converted,         0, NULL);
+    SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT,  SQL_C_SLONG, SQL_INTEGER, 0,   0, &id,                             0, NULL);
+    SQLBindParameter(hstmt, 2, SQL_PARAM_INPUT,  SQL_C_CHAR,  SQL_VARCHAR, 50,  0, customer_firstName_converted,    0, NULL);
+    SQLBindParameter(hstmt, 3, SQL_PARAM_INPUT,  SQL_C_CHAR,  SQL_VARCHAR, 50,  0, customer_lastName_converted,     0, NULL);
+    SQLBindParameter(hstmt, 4, SQL_PARAM_INPUT,  SQL_C_CHAR,  SQL_VARCHAR, 100, 0, customer_address_converted,      0, NULL);
+    SQLBindParameter(hstmt, 5, SQL_PARAM_INPUT,  SQL_C_CHAR,  SQL_VARCHAR, 6,   0, customer_zip,                    0, NULL);
+    SQLBindParameter(hstmt, 6, SQL_PARAM_INPUT,  SQL_C_CHAR,  SQL_VARCHAR, 50,  0, customer_city_converted,         0, NULL);
 
-        SQLBindParameter(hstmt, 7, SQL_PARAM_INPUT,  SQL_C_CHAR,  SQL_VARCHAR, 20,  0, customer_phone,                  0, NULL);
-        SQLBindParameter(hstmt, 8, SQL_PARAM_INPUT,  SQL_C_CHAR,  SQL_VARCHAR, 100, 0, customer_email,                  0, NULL);
+    SQLBindParameter(hstmt, 7, SQL_PARAM_INPUT,  SQL_C_CHAR,  SQL_VARCHAR, 20,  0, customer_phone,                  0, NULL);
+    SQLBindParameter(hstmt, 8, SQL_PARAM_INPUT,  SQL_C_CHAR,  SQL_VARCHAR, 100, 0, customer_email,                  0, NULL);
 
-        // Prepare the SQL statement
-        ret = SQLPrepare(hstmt, query, SQL_NTS);
+    // Prepare the SQL statement
+    ret = SQLPrepare(hstmt, query, SQL_NTS);
+    if (SQL_SUCCEEDED(ret))
+    {
+        // Execute the query
+        ret = SQLExecute(hstmt);
+
         if (SQL_SUCCEEDED(ret))
         {
-            // Execute the query
-            ret = SQLExecute(hstmt);
-
-            if (SQL_SUCCEEDED(ret))
+            if (SQLMoreResults(hstmt) == SQL_NO_DATA)
             {
-                if (SQLMoreResults(hstmt) == SQL_NO_DATA)
-                {
-                    printf("SQL operations ready");
-                }
+                printf("SQL operations ready");
             }
-            // Free the statement handle
-            SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
         }
+        // Free the statement handle
+        SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
     }
-    else {
-        // Get the return code
-        SQLGetDiagRec(SQL_HANDLE_DBC, hdbc, 1, NULL, NULL, retcode, SQL_RETURN_CODE_LEN, NULL);
-        printf("Error connecting to database: %s\n", retcode);
-    }
+
 
     free(customer_lastName_converted);
     free(customer_firstName_converted);

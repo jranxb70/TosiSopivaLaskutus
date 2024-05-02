@@ -5,6 +5,7 @@
 
 #define SQL_RESULT_LEN                  240
 #define SQL_RETURN_CODE_LEN             1000
+#define SQL_JSON_RESULT_LEN             2048
 
 #define LEN_COMPANY_NAME                31
 #define LEN_FIRST_NAME                  51
@@ -830,6 +831,75 @@ void queryCustomers(_Out_ char** jsonString, _Out_ node_t** errorList)
     // Free the statement handle
     SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
 
+    dbClose();
+}
+
+/* Function to fetch product item data based on EAN barcode */
+void queryProductItemByEAN(char* ean, char** json_output) 
+{
+    *json_output = NULL;
+    /* Open a connection to the database */
+    char fileName[21] = "connectionstring.txt";
+    DBERROR* err = NULL;
+    dbOpen(fileName, &err);
+
+    if (err->errorCode < 0)
+    {
+        free(err);
+        return;
+    }
+    int ret = err->errorCode;
+    free(err);
+    err = NULL;
+
+    SQLHSTMT hstmt;
+
+    // Allocate a statement handle
+    SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
+
+    /* SQL query to execute stored procedure */
+    char query[512];
+    sprintf(query, "{call QueryProductDataByEAN(?)}");
+
+    /* Bind the parameter */
+    SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 13, 0, ean, 0, NULL);
+
+    /* Execute the SQL query */
+    SQLRETURN retValue =  SQLExecDirect(hstmt, (SQLCHAR*)query, SQL_NTS);
+
+    if (retValue != SQL_SUCCESS)
+    {
+        SQLCHAR sqlstate[6];
+        SQLINTEGER native_error;
+        SQLCHAR message_text[SQL_MAX_MESSAGE_LENGTH];
+        SQLSMALLINT text_length;
+
+        SQLRETURN retussi = SQLGetDiagRec(SQL_HANDLE_STMT, hstmt, 1, sqlstate, &native_error, message_text, sizeof(message_text), &text_length);
+        printf("Error executing the stored procedure: %s\n", message_text);
+    }
+
+    SQLCHAR json_result[SQL_JSON_RESULT_LEN];
+
+    /* Fetch the result */
+    while (SQLFetch(hstmt) == SQL_SUCCESS) 
+    {
+        /* Get the result as a string */
+        SQLGetData(hstmt, 1, SQL_C_CHAR, json_result, sizeof(json_result), NULL);
+    }
+
+    /* Check if the query returned a result */
+    if (json_result != NULL) 
+    {
+        /* The result is a JSON string. Assign it to the output parameter. */
+        *json_output = strdup(json_result);
+    }
+
+    global_json_data = *json_output;
+
+    /* Free the statement handle */
+    SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
+
+    /* Close the database connection */
     dbClose();
 }
 

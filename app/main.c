@@ -20,6 +20,17 @@ void queryInvoiceByInvoiceId()
 
 }
 
+void testEAN()
+{
+    char lastName[14] = "6438460761591";
+    char* data = NULL;
+    queryProductItemByEAN(lastName, &data);
+    
+    int nakki = 0;
+    free_json_data();
+    nakki++;
+}
+
 void testUpdateForCustomer()
 {
     int id = 1;
@@ -52,6 +63,9 @@ int main(int argc, char *argv[])
         fprintf(stdout, "%s\n", "Insufficient input - enter a value.");
         return 1;
     }
+
+    testEAN();
+    return 0;
 
     int del = updateInvoice(311, 1, "2024-03-01 0:00:00.0000000", "12783", 0.00, 0.00, 0.00, "2024-03-15", 0.00);
     

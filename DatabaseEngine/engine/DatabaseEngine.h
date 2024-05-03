@@ -42,6 +42,8 @@ void DisplayError(SQLCHAR* sqlState, SQLINTEGER nativeError, SQLCHAR* message, S
 extern "C" {
 #endif
 
+	void DB_ENGINE_LIBRARY_EXPORT queryProductItemByEAN(char* ean, char** json_output);
+
 	int DB_ENGINE_LIBRARY_EXPORT addDBUser(
 		_In_ char*					login,
 		_In_ char*					password,

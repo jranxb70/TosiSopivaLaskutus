@@ -265,6 +265,70 @@ int deleteCustomer(_In_ long customer_id)
     return countDeleted;
 }
 
+void queryProductItemByEAN(char* ean, char** json_output)
+{
+    char fileName[21] = "connectionstring.txt";
+    DBERROR* err = NULL;
+    dbOpen(fileName, &err);
+
+    if (err->errorCode < 0)
+    {
+        free(err);
+        return -1;
+    }
+    int ret = err->errorCode;
+    free(err);
+    err = NULL;
+
+    SQLHSTMT hstmt;
+
+    /* Allocate a statement handle */
+
+    SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
+
+    /* SQL query to execute stored procedure */
+    char query[512];
+    sprintf(query, "{call QueryProductDataByEAN(?)}");
+
+    int i = sizeof(ean);
+
+    SQLCHAR sqlstate[6];
+    SQLINTEGER native_error;
+    SQLCHAR message_text[SQL_MAX_MESSAGE_LENGTH];
+    SQLSMALLINT text_length;
+
+    /* Bind the parameter */
+    SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_CHAR, 13, 0, ean, 0, NULL);
+
+    /* Execute the SQL query */
+    SQLRETURN insult = SQLExecDirect(hstmt, (SQLCHAR*)query, SQL_NTS);
+
+    if (insult == -1)
+    {
+        SQLRETURN retDiagRec = SQLGetDiagRec(SQL_HANDLE_STMT, hstmt, 1, sqlstate, &native_error, message_text, sizeof(message_text), &text_length);
+        printf("Error executing the stored procedure: %s\n", message_text);
+    }
+
+    /* Fetch the result */
+    while (SQLFetch(hstmt) == SQL_SUCCESS) {
+        /* Get the result as a string */
+        SQLGetData(hstmt, 1, SQL_C_CHAR, result, sizeof(result), NULL);
+    }
+
+    /* Check if the query returned a result */
+    if (result != NULL) {
+        /* The result is a JSON string. Assign it to the output parameter. */
+        *json_output = strdup(result);
+    }
+
+    /* Free the statement handle */
+    SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
+
+    /* Close the database connection */
+    dbClose(hdbc);
+}
+
+
 /**
  * This function deletes an invoice according to an invoice id and, if exist, every 
  * invoice_line related to the invoice.

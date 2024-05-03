@@ -53,6 +53,11 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    char* ean = "6438460761591";
+    char* json_output = NULL;
+    queryProductItemByEAN(ean, &json_output);
+    free_json_data();
+
     int del = updateInvoice(311, 1, "2024-03-01 0:00:00.0000000", "12783", 0.00, 0.00, 0.00, "2024-03-15", 0.00);
     
     int d = deleteInvoice(52);

@@ -266,7 +266,63 @@ int deleteCustomer(_In_ long customer_id)
     return countDeleted;
 }
 
-void queryProductItemByEAN(char* ean, char** json_output)
+void FetchCustomerData(char* inputParam, int isAPhoneNumber, char** json_output)
+{
+
+    char fileName[21] = "connectionstring.txt";
+    DBERROR* err = NULL;
+    dbOpen(fileName, &err);
+
+    if (err->errorCode < 0)
+    {
+        free(err);
+        return -1;
+    }
+
+    free(err);
+    err = NULL;
+
+    SQLHSTMT hstmt;
+    // Allocate a statement handle
+    SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
+
+    SQLRETURN ret;
+    SQLCHAR outJson[1024];
+
+    // Bind parameters
+    SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 255, 0, inputParam, 0, NULL);
+    SQLBindParameter(hstmt, 2, SQL_PARAM_INPUT, SQL_C_BIT, SQL_BIT, 0, 0, &isAPhoneNumber, 0, NULL);
+
+    // Execute SQL command
+    ret = SQLExecDirect(hstmt, (SQLCHAR*)"{call FetchCustomerData(?, ?)}", SQL_NTS);
+
+    if (SQL_SUCCEEDED(ret)) 
+    {
+        // Bind columns
+        SQLBindCol(hstmt, 1, SQL_C_CHAR, outJson, sizeof(outJson), NULL);
+
+        // Fetch rows
+        while (SQLFetch(hstmt) == SQL_SUCCESS) {
+            printf("Data: %s\n", outJson);
+        }
+
+        /* Check if the query returned a result */
+        if (outJson != NULL)
+        {
+            /* The result is a JSON string. Assign it to the output parameter. */
+            *json_output = strdup(outJson);
+        }
+
+        global_json_data = *json_output;
+    }
+
+    // Free statement handle
+    SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
+
+    dbClose();
+}
+
+void queryProductItemByEANTemp(char* ean, char** json_output)
 {
     char fileName[21] = "connectionstring.txt";
     DBERROR* err = NULL;

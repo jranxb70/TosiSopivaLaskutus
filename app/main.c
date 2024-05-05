@@ -31,6 +31,24 @@ void testEAN()
     nakki++;
 }
 
+void testEAN2()
+{
+    char* fileName = "connectionstring.txt";
+    char* dbErrMsg = NULL;
+    dbOpenCloseTest(
+        _In_(char*) fileName,
+        _Out_(char**) & dbErrMsg);
+    free(dbErrMsg);
+
+    char lastName[14] = "6438460761591";
+    char* data = NULL;
+    queryProductItemByEAN(lastName, &data);
+
+    int nakki = 0;
+    free_json_data();
+    nakki++;
+}
+
 void testUpdateForCustomer()
 {
     int id = 1;

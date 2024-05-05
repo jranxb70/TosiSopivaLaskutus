@@ -143,6 +143,92 @@ exit:
 }
 
 /**
+* This function opens the connection to a database using an ODBC driver.
+*
+* @param fileName: A name of the file that must contain the connection string
+* @param dbErr: Holds information for what phase went wrong and with what err code.
+*/
+void dbOpenCloseTest(
+    _In_ char* fileName,
+    _Out_ char** dbErrMsg)
+{
+    char* workingDirectory = NULL;
+    char* connectionStringW = NULL;
+
+    *dbErrMsg = NULL;
+
+    int err = 0;
+
+
+    SQLCHAR sqlstate[6];
+    SQLINTEGER native_error;
+    SQLCHAR message_text[SQL_MAX_MESSAGE_LENGTH];
+    SQLSMALLINT text_length;
+
+    // Allocate an environment handle
+    SQLRETURN retHandle = SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &henv);
+    if (retHandle != SQL_SUCCESS && retHandle != SQL_SUCCESS_WITH_INFO) {
+        SQLRETURN retHandle = SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &henv);
+        goto exit;
+    }
+
+    // Set the ODBC version
+    SQLRETURN retEnvAttr = SQLSetEnvAttr(henv, SQL_ATTR_ODBC_VERSION, (SQLPOINTER)SQL_OV_ODBC3, 0);
+    if (retEnvAttr != SQL_SUCCESS && retEnvAttr != SQL_SUCCESS_WITH_INFO) {
+        SQLFreeHandle(SQL_HANDLE_ENV, henv);
+        goto exit;
+    }
+
+    //// Allocate a connection handle
+    SQLRETURN retConHandle = SQLAllocHandle(SQL_HANDLE_DBC, henv, &hdbc);
+    if (retConHandle != SQL_SUCCESS && retConHandle != SQL_SUCCESS_WITH_INFO) {
+        SQLFreeHandle(SQL_HANDLE_ENV, henv);
+        goto exit;
+    }
+
+    if (-1 == (err = getWorkingDir(&workingDirectory)))
+    {
+        SQLFreeHandle(SQL_HANDLE_ENV, henv);
+        goto exit;
+    }
+
+    if (-1 == (err = getConnectionString(&workingDirectory, fileName, &connectionStringW)))
+    {
+        SQLFreeHandle(SQL_HANDLE_ENV, henv);
+        goto exit;
+    }
+
+    if (!!connectionStringW)
+    {
+        //Connect to the database
+        SQLRETURN retConnect = SQLDriverConnect(hdbc, NULL, (SQLCHAR*)connectionStringW, SQL_NTS, NULL, 0, NULL, SQL_DRIVER_NOPROMPT);
+        if (retConnect != SQL_SUCCESS && retConnect != SQL_SUCCESS_WITH_INFO) {
+            SQLRETURN retDiagRec = SQLGetDiagRec(SQL_HANDLE_DBC, hdbc, 1, sqlstate, &native_error, message_text, sizeof(message_text), &text_length);
+            printf("Error connecting to database: %s\n", message_text);
+
+            /* Check if the query returned a result */
+            if (result != NULL) {
+                /* The result is a JSON string. Assign it to the output parameter. */
+                *dbErrMsg = strdup(message_text);
+            }
+
+            SQLFreeHandle(SQL_HANDLE_DBC, hdbc);
+            SQLFreeHandle(SQL_HANDLE_ENV, henv);
+            goto exit;
+        }
+        dbClose();
+    }
+    else
+    {
+        printf("ERROR: The connection string is unavaible.");
+    }
+
+exit:
+    free(connectionStringW);
+    free(workingDirectory);
+}
+
+/**
 * This function closes the ODBC connection to the Sql Server database.
 */
 void dbClose()
@@ -266,7 +352,7 @@ int deleteCustomer(_In_ long customer_id)
     return countDeleted;
 }
 
-void queryProductItemByEAN(char* ean, char** json_output)
+void queryProductItemByEAN2nd(char* ean, char** json_output)
 {
     char fileName[21] = "connectionstring.txt";
     DBERROR* err = NULL;
@@ -899,7 +985,9 @@ void queryCustomers(_Out_ char** jsonString, _Out_ node_t** errorList)
 }
 
 /* Function to fetch product item data based on EAN barcode */
-void queryProductItemByEAN(char* ean, char** json_output) 
+void queryProductItemByEAN(
+    _In_  char*  ean, 
+    _Out_ char** json_output) 
 {
     *json_output = NULL;
     /* Open a connection to the database */

@@ -50,6 +50,8 @@ extern "C" {
 		_In_  char* ean, 
 		_Out_ char** json_output);
 
+	void DB_ENGINE_LIBRARY_EXPORT FetchCustomerData(char* inputParam, int isAPhoneNumber, char** json_output);
+
 	int DB_ENGINE_LIBRARY_EXPORT addDBUser(
 		_In_ char*					login,
 		_In_ char*					password,

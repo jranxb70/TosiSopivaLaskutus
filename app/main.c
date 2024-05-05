@@ -22,6 +22,12 @@ void queryInvoiceByInvoiceId()
 
 void testEAN()
 {
+    char* json_out = NULL;
+    int isAPhoneNumber = 0;
+    char* inputParam = "Viitala";
+    FetchCustomerData((char*) inputParam, (int) isAPhoneNumber, (char**) &json_out);
+    free_json_data();
+
     char lastName[14] = "6438460761591";
     char* data = NULL;
     queryProductItemByEAN(lastName, &data);

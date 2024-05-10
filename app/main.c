@@ -89,9 +89,9 @@ int main(int argc, char *argv[])
     }
 
     testEAN();
-    return 0;
+    //return 0;
 
-    int del = updateInvoice(311, 1, "2024-03-01 0:00:00.0000000", "12783", 0.00, 0.00, 0.00, "2024-03-15", 0.00);
+    int del = updateInvoice(311, 1, "2024-03-01 0:00:00.0000000", "12783", 0, 0, 0, "2024-03-15", 0);
     
     int d = deleteInvoice(52);
 

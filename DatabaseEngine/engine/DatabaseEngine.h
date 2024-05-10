@@ -24,6 +24,8 @@
 #define ASCENDING                       1
 #define DESCENDING                      -1
 
+typedef long long int largeint;
+
 node_t* internalErrorList = NULL;
 
 enum FailedFunction { ErrFuncNone = 0, ErrFuncSQLAllocHandleA, ErrFuncSQLSetEnvAttrA, ErrFuncSQLAllocHandleB, ErrFuncSQLDriverConnectA, ErrFunc_getConnectionStringA, ErrFunc_getWorkingDirA };
@@ -89,11 +91,11 @@ extern "C" {
 		_In_ int					customer_id,
 		_In_ char*					invoice_date,
 		_In_ char*					invoice_bankreference,
-		_In_ double					invoice_subtotal,
-		_In_ double					invoice_tax,
-		_In_ double					invoice_total,
+		_In_ largeint					invoice_subtotal,
+		_In_ largeint					invoice_tax,
+		_In_ largeint					invoice_total,
 		_In_ char*					invoice_due_date,
-		_In_ double					invoice_outstanding_balance);
+		_In_ largeint					invoice_outstanding_balance);
 
 	int  DB_ENGINE_LIBRARY_EXPORT deleteInvoice(
 		_In_ long					invoice_id);
@@ -146,7 +148,7 @@ extern "C" {
 		_In_ int                    invoice_id,
 		_In_ int                    product_item_id,
 		_In_ int                    invoiceline_quantity,
-		_In_ double                 invoiceline_price,
+		_In_ largeint                 invoiceline_price,
 		_In_ char*					product_description);
 
 	int DB_ENGINE_LIBRARY_EXPORT addInvoice(
@@ -154,9 +156,9 @@ extern "C" {
 		_In_ int                    customer_id,
 		_In_ SQL_TIMESTAMP_STRUCT   invoice_date,
 		_In_ char*					invoice_bankreference,
-		_In_ double                 invoice_subtotal,
-		_In_ double                 invoice_tax,
-		_In_ double                 invoice_total,
+		_In_ largeint                 invoice_subtotal,
+		_In_ largeint                 invoice_tax,
+		_In_ largeint                 invoice_total,
 		_In_ SQL_DATE_STRUCT        invoice_due_date,
 		_Out_ int*					invoice_idOut,
 		_Out_ node_t**				errorList);

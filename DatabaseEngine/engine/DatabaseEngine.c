@@ -373,7 +373,7 @@ void FetchCustomerData(char* inputParam, int isAPhoneNumber, char** json_output)
     SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
 
     SQLRETURN ret;
-    SQLCHAR outJson[1024];
+    SQLCHAR outJson[SQL_JSON_RESULT_LEN];
 
     // Bind parameters
     SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 255, 0, inputParam, 0, NULL);
@@ -562,11 +562,11 @@ int updateInvoice(
     _In_ int    customer_id,
     _In_ char*  invoice_date,
     _In_ char*  invoice_bankreference,
-    _In_ double invoice_subtotal,
-    _In_ double invoice_tax,
-    _In_ double invoice_total,
+    _In_ largeint invoice_subtotal,
+    _In_ largeint invoice_tax,
+    _In_ largeint invoice_total,
     _In_ char*  invoice_due_date,
-    _In_ double invoice_outstanding_balance)
+    _In_ largeint invoice_outstanding_balance)
 {
     int functionReturnValue = -3;
     char fileName[21] = "connectionstring.txt";
@@ -596,7 +596,7 @@ int updateInvoice(
     SQLHSTMT   hstmt;
     SQLINTEGER id = invoice_id;
     SQLINTEGER sql_customer_id = customer_id;
-    SQLDOUBLE  sql_invoice_outstanding_balance = invoice_outstanding_balance;
+    SQLBIGINT  sql_invoice_outstanding_balance = invoice_outstanding_balance;
 
     SQLCHAR sqlstate[6];
     SQLINTEGER native_error;
@@ -616,13 +616,13 @@ int updateInvoice(
         SQLBindParameter(hstmt, 4, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR,                        20, 0, invoice_bankreference,               0, NULL);
 
 
-        SQLBindParameter(hstmt, 5, SQL_PARAM_INPUT, SQL_C_DOUBLE, SQL_DECIMAL,                      10, 2, &invoice_subtotal,                   0, NULL);
-        SQLBindParameter(hstmt, 6, SQL_PARAM_INPUT, SQL_C_DOUBLE, SQL_DECIMAL,                      10, 2, &invoice_tax,                        0, NULL);
-        SQLBindParameter(hstmt, 7, SQL_PARAM_INPUT, SQL_C_DOUBLE, SQL_DECIMAL,                      10, 2, &invoice_total,                      0, NULL);
+        SQLBindParameter(hstmt, 5, SQL_PARAM_INPUT, SQL_C_SBIGINT, SQL_BIGINT, 0, 0, &invoice_subtotal,                   0, NULL);
+        SQLBindParameter(hstmt, 6, SQL_PARAM_INPUT, SQL_C_SBIGINT, SQL_BIGINT, 0, 0, &invoice_tax,                        0, NULL);
+        SQLBindParameter(hstmt, 7, SQL_PARAM_INPUT, SQL_C_SBIGINT, SQL_BIGINT, 0, 0, &invoice_total,                      0, NULL);
 
         SQLBindParameter(hstmt, 8, SQL_PARAM_INPUT, SQL_C_TYPE_DATE, SQL_TYPE_DATE,                 0,  0, &invoiceDueDate,                     0, NULL);
 
-        SQLBindParameter(hstmt, 9, SQL_PARAM_INPUT, SQL_C_DOUBLE, SQL_DECIMAL,                      10, 2, &sql_invoice_outstanding_balance,    0, NULL);
+        SQLBindParameter(hstmt, 9, SQL_PARAM_INPUT, SQL_C_SBIGINT, SQL_BIGINT, 0, 0, &sql_invoice_outstanding_balance,    0, NULL);
 
         if (SQL_SUCCEEDED(ret))
         {
@@ -1175,9 +1175,9 @@ void queryInvoiceById(_In_ int invoice_id, _Out_ char** jsonString, _Out_ node_t
                 SQLINTEGER  invoiceId;
                 SQLCHAR     date[LEN_DATE];
                 SQLCHAR     invoice_bank_reference[LEN_BANK_REF];
-                SQLDOUBLE   invoice_subtotal;
-                SQLDOUBLE   invoice_tax;
-                SQLDOUBLE   invoice_total;
+                SQLBIGINT   invoice_subtotal;
+                SQLBIGINT   invoice_tax;
+                SQLBIGINT   invoice_total;
 
                 SQLCHAR     invoice_due_date[LEN_DUE_DATE];
 
@@ -1200,9 +1200,9 @@ void queryInvoiceById(_In_ int invoice_id, _Out_ char** jsonString, _Out_ node_t
 
                     SQLGetData(hstmt, 11, SQL_C_CHAR,   invoice_bank_reference, sizeof(invoice_bank_reference), NULL);
 
-                    SQLGetData(hstmt, 12, SQL_C_DOUBLE, &invoice_subtotal,      0,                              NULL);
-                    SQLGetData(hstmt, 13, SQL_C_DOUBLE, &invoice_tax,           0,                              NULL);
-                    SQLGetData(hstmt, 14, SQL_C_DOUBLE, &invoice_total,         0,                              NULL);
+                    SQLGetData(hstmt, 12, SQL_C_SBIGINT, &invoice_subtotal,      0,                              NULL);
+                    SQLGetData(hstmt, 13, SQL_C_SBIGINT, &invoice_tax,           0,                              NULL);
+                    SQLGetData(hstmt, 14, SQL_C_SBIGINT, &invoice_total,         0,                              NULL);
 
                     SQLLEN invoice_due_dateLen;
 
@@ -1533,9 +1533,9 @@ void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out
                     SQLGetData(hstmt, 3, SQL_C_CHAR, dateStr, sizeof(dateStr), NULL); 
                     SQLGetData(hstmt, 4, SQL_C_CHAR, bankReference, sizeof(bankReference), NULL);
 
-                    SQLGetData(hstmt, 5, SQL_C_DOUBLE, &invoice_subtotal, 0, NULL);
-                    SQLGetData(hstmt, 6, SQL_C_DOUBLE, &invoice_tax, 0, NULL);
-                    SQLGetData(hstmt, 7, SQL_C_DOUBLE, &invoice_total, 0, NULL);
+                    SQLGetData(hstmt, 5, SQL_C_SBIGINT, &invoice_subtotal, 0, NULL);
+                    SQLGetData(hstmt, 6, SQL_C_SBIGINT, &invoice_tax, 0, NULL);
+                    SQLGetData(hstmt, 7, SQL_C_SBIGINT, &invoice_total, 0, NULL);
 
                     SQLLEN invoice_due_date_len;
 
@@ -1696,12 +1696,12 @@ int queryInvoices(
             SQLCHAR         invoice_date[LEN_DATE];
             SQLCHAR         invoice_bankreference[LEN_BANK_REF];
 
-            SQLDOUBLE       invoice_subtotal;
-            SQLDOUBLE       invoice_tax;
-            SQLDOUBLE       invoice_total;
+            SQLBIGINT       invoice_subtotal;
+            SQLBIGINT       invoice_tax;
+            SQLBIGINT       invoice_total;
 
             SQLCHAR         invoice_due_date[LEN_DUE_DATE];
-            SQLDOUBLE       invoice_outstanding_balance;
+            SQLBIGINT       invoice_outstanding_balance;
 
             while (SQLFetch(hstmt) == SQL_SUCCESS)
             {
@@ -1711,14 +1711,14 @@ int queryInvoices(
                 SQLGetData(hstmt, 3, SQL_C_CHAR, invoice_date, sizeof(invoice_date), NULL);
                 SQLGetData(hstmt, 4, SQL_C_CHAR, invoice_bankreference, sizeof(invoice_bankreference), NULL);
 
-                SQLGetData(hstmt, 5, SQL_C_DOUBLE, &invoice_subtotal, 0, NULL);
-                SQLGetData(hstmt, 6, SQL_C_DOUBLE, &invoice_tax, 0, NULL);
-                SQLGetData(hstmt, 7, SQL_C_DOUBLE, &invoice_total, 0, NULL);
+                SQLGetData(hstmt, 5, SQL_C_SBIGINT, &invoice_subtotal, 0, NULL);
+                SQLGetData(hstmt, 6, SQL_C_SBIGINT, &invoice_tax, 0, NULL);
+                SQLGetData(hstmt, 7, SQL_C_SBIGINT, &invoice_total, 0, NULL);
 
                 SQLLEN invoice_due_dateLen;
 
                 SQLGetData(hstmt, 8, SQL_C_CHAR, invoice_due_date, sizeof(invoice_due_date), &invoice_due_dateLen);
-                SQLGetData(hstmt, 9, SQL_C_DOUBLE, &invoice_outstanding_balance, 0, NULL);
+                SQLGetData(hstmt, 9, SQL_C_SBIGINT, &invoice_outstanding_balance, 0, NULL);
 
                 if (invoice_due_dateLen == SQL_NULL_DATA)
                 {
@@ -1779,7 +1779,7 @@ void addInvoiceLine(
     //_In_ char* invoiceline_product,
     _In_ int                    product_item_id,
     _In_ int                    invoiceline_quantity,
-    _In_ double                 invoiceline_price,
+    _In_ largeint                 invoiceline_price,
     _In_ char*                  product_description)
 {
     char fileName[21] = "connectionstring.txt";
@@ -1818,7 +1818,7 @@ void addInvoiceLine(
         SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER,   0, 0, &invoice_id,           0, NULL);
         SQLBindParameter(hstmt, 2, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER,   0, 0, &product_item_id,      0, NULL);
         SQLBindParameter(hstmt, 3, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER,   0, 0, &invoiceline_quantity, 0, NULL);
-        SQLBindParameter(hstmt, 4, SQL_PARAM_INPUT, SQL_C_DOUBLE, SQL_DECIMAL, 10, 2, &invoiceline_price,    0, NULL);
+        SQLBindParameter(hstmt, 4, SQL_PARAM_INPUT, SQL_C_SBIGINT, SQL_DECIMAL, 10, 2, &invoiceline_price,    0, NULL);
 
         SQLBindParameter(hstmt, 5, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 1024, 0, product_description_decoded, 0, NULL);
         // Prepare the SQL statement
@@ -1875,9 +1875,9 @@ int addInvoice(
     _In_ int                    customer_id,
     _In_ SQL_TIMESTAMP_STRUCT   invoice_date,
     _In_ char*                  invoice_bankreference,
-    _In_ double                 invoice_subtotal,
-    _In_ double                 invoice_tax,
-    _In_ double                 invoice_total,
+    _In_ largeint                 invoice_subtotal,
+    _In_ largeint                 invoice_tax,
+    _In_ largeint                 invoice_total,
     _In_ SQL_DATE_STRUCT        invoice_due_date,
     _Out_ int*                  invoice_idOut, 
     _Out_ node_t**              errorList)
@@ -1923,9 +1923,9 @@ int addInvoice(
         SQLBindParameter(hstmt, 2, SQL_PARAM_INPUT,  SQL_C_SLONG,          SQL_INTEGER,               0,  0, &customer_id,           0, NULL);
         SQLBindParameter(hstmt, 3, SQL_PARAM_INPUT,  SQL_C_TYPE_TIMESTAMP, SQL_TYPE_TIMESTAMP,        0,  7, &invoice_date,          0, NULL);
         SQLBindParameter(hstmt, 4, SQL_PARAM_INPUT,  SQL_C_CHAR,           SQL_VARCHAR,               20, 0, invoice_bankreference,  0, NULL);
-        SQLBindParameter(hstmt, 5, SQL_PARAM_INPUT,  SQL_C_DOUBLE,         SQL_DECIMAL,               10, 2, &invoice_subtotal,      0, NULL);
-        SQLBindParameter(hstmt, 6, SQL_PARAM_INPUT,  SQL_C_DOUBLE,         SQL_DECIMAL,               10, 2, &invoice_tax,           0, NULL);
-        SQLBindParameter(hstmt, 7, SQL_PARAM_INPUT,  SQL_C_DOUBLE,         SQL_DECIMAL,               10, 2, &invoice_total,         0, NULL);
+        SQLBindParameter(hstmt, 5, SQL_PARAM_INPUT,  SQL_C_SBIGINT, SQL_BIGINT, 0, 0, &invoice_subtotal,      0, NULL);
+        SQLBindParameter(hstmt, 6, SQL_PARAM_INPUT,  SQL_C_SBIGINT, SQL_BIGINT, 0, 0, &invoice_tax,           0, NULL);
+        SQLBindParameter(hstmt, 7, SQL_PARAM_INPUT,  SQL_C_SBIGINT, SQL_BIGINT, 0, 0, &invoice_total,         0, NULL);
 
         SQLBindParameter(hstmt, 8, SQL_PARAM_INPUT,  SQL_C_TYPE_DATE,      SQL_TYPE_DATE,             0,  0, &invoice_due_date,      0, NULL);
 
@@ -2415,9 +2415,9 @@ int addNewInvoiceData(_In_ char* invoicing_data_json, _In_ int length)
             _In_(int)                      id->valueint,
             _In_                           myTimestamp,
             _In_(char*)                    bankRef->valuestring,
-            _In_(double)                   invoice_subtotal->valuedouble,
-            _In_(double)                   invoice_tax->valuedouble,
-            _In_(double)                   invoice_total->valuedouble,
+            _In_(largeint)                   invoice_subtotal->valuedouble,
+            _In_(largeint)                   invoice_tax->valuedouble,
+            _In_(largeint)                   invoice_total->valuedouble,
             _In_                           invoiceDueDate,
             _Out_(int*)                    &invoice_id, 
                                            &errs);

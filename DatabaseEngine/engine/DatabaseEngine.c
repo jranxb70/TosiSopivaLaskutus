@@ -1180,6 +1180,7 @@ void queryInvoiceById(_In_ int invoice_id, _Out_ char** jsonString, _Out_ node_t
                 SQLBIGINT   invoice_total;
 
                 SQLCHAR     invoice_due_date[LEN_DUE_DATE];
+                SQLBIGINT   outstanding_balance = 0;
 
                 while (SQLFetch(hstmt) == SQL_SUCCESS)
                 {
@@ -1207,6 +1208,8 @@ void queryInvoiceById(_In_ int invoice_id, _Out_ char** jsonString, _Out_ node_t
                     SQLLEN invoice_due_dateLen;
 
                     SQLGetData(hstmt, 15, SQL_C_CHAR,   invoice_due_date,       sizeof(invoice_due_date),       &invoice_due_dateLen);
+
+                    SQLGetData(hstmt, 16, SQL_C_SBIGINT, &outstanding_balance, 0, NULL);
 
                     if (phoneLen == SQL_NULL_DATA)
                     {
@@ -1272,6 +1275,8 @@ void queryInvoiceById(_In_ int invoice_id, _Out_ char** jsonString, _Out_ node_t
                     {
                         cJSON_AddStringToObject(root, "invoice_due_date", invoice_due_date);
                     }
+
+                    cJSON_AddNumberToObject(root, "invoice_outstanding_balance", outstanding_balance);
 
                     cJSON_AddArrayToObject(root, "invoice_lines");
                 }

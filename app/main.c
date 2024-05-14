@@ -126,7 +126,7 @@ int main(int argc, char *argv[])
 
     deleteCustomer(
         _In_ (long)					10);
-    return 0;
+    //return 0;
     
     char* decodedCharArray = NULL;
     decodeUTF8Encoding(array, &decodedCharArray);
@@ -141,7 +141,7 @@ int main(int argc, char *argv[])
     int succeededX = free_json_data();
     free_sql_error_details();
 
-    free(jsonX);
+    //free(jsonX);
 
 
     queryInvoiceByInvoiceId();
@@ -220,11 +220,12 @@ int main(int argc, char *argv[])
 
     char* json = NULL;
     node_t* errs = NULL;
+    customer_id = 1;
     queryInvoicesByCustomer(customer_id, &json, &errs);
     int succeeded = free_json_data();
     free_sql_error_details();
 
-    free(json);
+    //free(json);
 
     char sample_json[2048];
 

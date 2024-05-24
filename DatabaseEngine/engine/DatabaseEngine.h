@@ -63,8 +63,31 @@ extern "C" {
 		_In_ char*					login,
 		_In_ char*					user_password);
 
-	void DB_ENGINE_LIBRARY_EXPORT getCompany(_In_ int company_id, _Out_ char** jsonStringCompany);
+	void DB_ENGINE_LIBRARY_EXPORT addCompany(
+		_In_  const char* company_name,
+		_In_  const char* company_address,
+		_In_  const char* company_zip,
+		_In_  const char* company_city,
+		_In_  const char* company_phone,
+		_In_  const char* company_business_id,
+		_Out_ SQLINTEGER* company_id);
 
+	void DB_ENGINE_LIBRARY_EXPORT addCompanyFromJson(
+		_In_  const char* companyJson,
+		_Out_ SQLINTEGER* company_id);
+
+	void DB_ENGINE_LIBRARY_EXPORT getCompany(
+		_In_ int company_id, 
+		_Out_ char** jsonStringCompany);
+
+	SQLRETURN DB_ENGINE_LIBRARY_EXPORT updateCompany(
+		_In_ int id, 
+		_In_ char* company_name, 
+		_In_ char* company_address,
+		_In_ char* company_zip, 
+		_In_ char* company_city, 
+		_In_ char* company_phone,
+		_In_ char* company_business_id);
 
 	int  DB_ENGINE_LIBRARY_EXPORT addNewInvoiceData(
 		_In_ char*					invoicing_data_json, 
@@ -83,6 +106,11 @@ extern "C" {
 
 		_Out_ int*					customer_id);
 
+
+	void DB_ENGINE_LIBRARY_EXPORT addCustomerFromJson(
+		_In_ const char* customerJson, 
+		_Out_ SQLINTEGER* customer_id);
+
 	int  DB_ENGINE_LIBRARY_EXPORT deleteCustomer(
 		_In_ long					customer_id);
 
@@ -91,11 +119,11 @@ extern "C" {
 		_In_ int					customer_id,
 		_In_ char*					invoice_date,
 		_In_ char*					invoice_bankreference,
-		_In_ largeint					invoice_subtotal,
-		_In_ largeint					invoice_tax,
-		_In_ largeint					invoice_total,
+		_In_ largeint			    invoice_subtotal,
+		_In_ largeint				invoice_tax,
+		_In_ largeint				invoice_total,
 		_In_ char*					invoice_due_date,
-		_In_ largeint					invoice_outstanding_balance);
+		_In_ largeint				invoice_outstanding_balance);
 
 	int  DB_ENGINE_LIBRARY_EXPORT deleteInvoice(
 		_In_ long					invoice_id);
@@ -108,7 +136,7 @@ extern "C" {
 		_In_ int					customer_id,
 		_Out_ char**				customer_data);
 
-	void DB_ENGINE_LIBRARY_EXPORT queryCustomers(
+	void DB_ENGINE_LIBRARY_EXPORT queryCustomersAsJson(
 		_Out_ char**				jsonString, 
 		_Out_ node_t**				errorList);
 
@@ -148,7 +176,7 @@ extern "C" {
 		_In_ int                    invoice_id,
 		_In_ int                    product_item_id,
 		_In_ int                    invoiceline_quantity,
-		_In_ largeint                 invoiceline_price,
+		_In_ largeint               invoiceline_price,
 		_In_ char*					product_description);
 
 	int DB_ENGINE_LIBRARY_EXPORT addInvoice(
@@ -156,9 +184,9 @@ extern "C" {
 		_In_ int                    customer_id,
 		_In_ SQL_TIMESTAMP_STRUCT   invoice_date,
 		_In_ char*					invoice_bankreference,
-		_In_ largeint                 invoice_subtotal,
-		_In_ largeint                 invoice_tax,
-		_In_ largeint                 invoice_total,
+		_In_ largeint               invoice_subtotal,
+		_In_ largeint               invoice_tax,
+		_In_ largeint               invoice_total,
 		_In_ SQL_DATE_STRUCT        invoice_due_date,
 		_Out_ int*					invoice_idOut,
 		_Out_ node_t**				errorList);

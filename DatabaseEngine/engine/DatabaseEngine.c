@@ -807,7 +807,6 @@ int getDBUser(_In_ char* login, _In_ char* user_password)
                 SQLCHAR     email[LEN_EMAIL];
                 SQLCHAR     password[LEN_PASSWORD];
 
-
                 while (SQLFetch(hstmt) == SQL_SUCCESS)
                 {
                     recordsFound = 1;
@@ -937,7 +936,18 @@ void updateCustomer(
     dbClose();
 }
 
-void queryCustomers(_Out_ char** jsonString, _Out_ node_t** errorList)
+void error(SQLHANDLE hh)
+{
+    SQLCHAR sqlstate[6];
+    SQLINTEGER native_error;
+    SQLCHAR message_text[SQL_MAX_MESSAGE_LENGTH];
+    SQLSMALLINT text_length;
+
+    SQLRETURN retussi = SQLGetDiagRec(SQL_HANDLE_STMT, hh, 1, sqlstate, &native_error, message_text, sizeof(message_text), &text_length);
+    printf("Error executing the stored procedure: %s\n", message_text);
+}
+
+void queryCustomersAsJson(_Out_ char** jsonString, _Out_ node_t** errorList)
 {
     char fileName[21] = "connectionstring.txt";
     DBERROR* err = NULL;
@@ -959,7 +969,7 @@ void queryCustomers(_Out_ char** jsonString, _Out_ node_t** errorList)
 
     // Prepare stored procedure call
     char call[256];
-    sprintf(call, "{call GetCustomers}");
+    sprintf(call, "{call GetCustomersAsJson}");
 
     // Execute stored procedure
     retcode = SQLExecDirect(hstmt, (SQLCHAR*)call, SQL_NTS);
@@ -968,71 +978,47 @@ void queryCustomers(_Out_ char** jsonString, _Out_ node_t** errorList)
 
     *errorList = internalErrorList;
 
-    cJSON* root = cJSON_CreateObject();
-
-    cJSON_AddArrayToObject(root, "customers");
-
-    // Process the invoice data
-    SQLINTEGER  customerId;
-    SQLCHAR     firstName[LEN_FIRST_NAME];
-    SQLCHAR     lastName[LEN_LAST_NAME];
-    SQLCHAR     address[LEN_ADDRESS];
-    SQLCHAR     zip[LEN_ZIP];
-    SQLCHAR     city[LEN_CITY];
-    SQLCHAR     phone[LEN_PHONE];
-    SQLCHAR     email[LEN_EMAIL];
+    SQLCHAR     jsonStringSql[4096];
 
     while (SQLFetch(hstmt) == SQL_SUCCESS)
     {
-        SQLGetData(hstmt, 1, SQL_C_SLONG, &customerId, 0, NULL);
-        SQLGetData(hstmt, 2, SQL_C_CHAR, firstName, sizeof(firstName), NULL);
-        SQLGetData(hstmt, 3, SQL_C_CHAR, lastName, sizeof(lastName), NULL);
-        SQLGetData(hstmt, 4, SQL_C_CHAR, address, sizeof(address), NULL);
-        SQLGetData(hstmt, 5, SQL_C_CHAR, zip, sizeof(zip), NULL);
-        SQLGetData(hstmt, 6, SQL_C_CHAR, city, sizeof(city), NULL);
-
-        SQLLEN phoneLen, emailLen;
-
-        SQLGetData(hstmt, 7, SQL_C_CHAR, phone, sizeof(phone), &phoneLen);
-        SQLGetData(hstmt, 8, SQL_C_CHAR, email, sizeof(email), &emailLen);
-
-        cJSON* customer = cJSON_CreateObject();
-
-        cJSON_AddNumberToObject(customer, "customer_id", customerId);
-        cJSON_AddStringToObject(customer, "first_name",  firstName);
-        cJSON_AddStringToObject(customer, "last_name",   lastName);
-        cJSON_AddStringToObject(customer, "address",     address);
-        cJSON_AddStringToObject(customer, "zip",         zip);
-        cJSON_AddStringToObject(customer, "city",        city);
-
-        // null email null phone situation
-
-        if (phoneLen == SQL_NULL_DATA) 
+        SQLRETURN rr = SQLGetData(hstmt, 1, SQL_C_CHAR, jsonStringSql, sizeof(jsonStringSql), NULL);
+        if (rr != SQL_SUCCESS)
         {
-            cJSON_AddStringToObject(customer, "phone", "N/A");
+            error(hstmt);
+        }
+        if (*jsonString == NULL)
+        {
+            *jsonString = strdup(jsonStringSql);
         }
         else
         {
-            cJSON_AddStringToObject(customer, "phone", phone);
-        }
-        if (emailLen == SQL_NULL_DATA)
-        {
-            cJSON_AddStringToObject(customer, "email", "N/A");
-        }
-        else
-        {
-            cJSON_AddStringToObject(customer, "email", email);
-        }
+            size_t max = 4096 * 500;
 
-        cJSON* customer_array = NULL;
-        customer_array = cJSON_GetObjectItem(root, "customers");
-        cJSON_AddItemReferenceToArray(customer_array, customer);
+            size_t destLen = strnlen_s(*jsonString, max);
+            size_t srcLen = strnlen_s(jsonStringSql, max);
+
+            size_t newLength = destLen + srcLen + 1;
+
+            char* invoicesTemp = (char*)realloc(*jsonString, newLength);
+
+            if (!invoicesTemp)
+            {
+                printf("Memory reallocation failed\n");
+                free(*jsonString); // Free the original memory
+                *jsonString = NULL;
+                jsonString = NULL;
+                goto exit;
+            }
+
+            *jsonString = invoicesTemp;
+
+            strcat_s(*jsonString, newLength, jsonStringSql);
+            (*jsonString)[destLen + srcLen] = '\0';
+        }
     }
-
-    *jsonString = cJSON_Print(root);
+exit:
     global_json_data = *jsonString;
-
-    cJSON_Delete(root);
 
     // Free the statement handle
     SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
@@ -1298,6 +1284,154 @@ void queryInvoiceById(_In_ int invoice_id, _Out_ char** jsonString, _Out_ node_t
     dbClose();
 }
 
+// Function to add a company using a stored procedure in SQL Server
+void addCompany(
+    _In_  const char* company_name,
+    _In_  const char* company_address,
+    _In_  const char* company_zip,
+    _In_  const char* company_city,
+    _In_  const char* company_phone,
+    _In_  const char* company_business_id,
+    _Out_ SQLINTEGER* company_id)
+{
+    char fileName[21] = "connectionstring.txt";
+    DBERROR* err = NULL;
+    dbOpen(fileName, &err);
+
+    if (err->errorCode < 0)
+    {
+        free(err);
+        return;
+    }
+    free(err);
+    err = NULL;
+
+    char* company_name_converted = NULL;
+    decodeUTF8Encoding(company_name, &company_name_converted);
+
+    char* company_address_converted = NULL;
+    decodeUTF8Encoding(company_address, &company_address_converted);
+
+    char* company_city_converted = NULL;
+    decodeUTF8Encoding(company_city, &company_city_converted);
+
+    SQLHSTMT hstmt;
+    SQLRETURN retcode;
+
+    char query[1024];
+    size_t bufferCount = 1024;
+    sprintf_s(query, bufferCount,
+        "{? = CALL dbo.AddCompany (?, ?, ?, ?, ?, ?)}");
+
+    if (hdbc == SQL_NULL_HDBC) {
+        fprintf(stderr, "Failed to open database connection.\n");
+        goto exit;
+    }
+
+    // Allocate a statement handle
+    retcode = SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
+    if (retcode != SQL_SUCCESS && retcode != SQL_SUCCESS_WITH_INFO) {
+        fprintf(stderr, "Failed to allocate statement handle.\n");
+        goto exit;
+    }
+
+    // Prepare the SQL statement to call the stored procedure
+    retcode = SQLPrepare(hstmt, query, SQL_NTS);
+    if (retcode != SQL_SUCCESS && retcode != SQL_SUCCESS_WITH_INFO) {
+        fprintf(stderr, "Failed to prepare SQL statement.\n");
+        goto exit;
+    }
+
+
+    SQLINTEGER id;
+
+    // Bind the return parameter
+    retcode = SQLBindParameter(hstmt, 1, SQL_PARAM_OUTPUT, SQL_C_SLONG, SQL_INTEGER, 0, 0, &id, 0, NULL);
+    if (retcode != SQL_SUCCESS && retcode != SQL_SUCCESS_WITH_INFO) {
+        fprintf(stderr, "Failed to bind return parameter.\n");
+        goto exit;
+    }
+
+    // Bind the input parameters
+    retcode = SQLBindParameter(hstmt, 2, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 50, 0, company_name_converted, 0, NULL);
+    if (retcode != SQL_SUCCESS && retcode != SQL_SUCCESS_WITH_INFO) {
+        fprintf(stderr, "Failed to bind company_name parameter.\n");
+        goto exit;
+    }
+
+    retcode = SQLBindParameter(hstmt, 3, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 100, 0, company_address_converted, 0, NULL);
+    if (retcode != SQL_SUCCESS && retcode != SQL_SUCCESS_WITH_INFO) {
+        fprintf(stderr, "Failed to bind company_address parameter.\n");
+        goto exit;
+    }
+
+    retcode = SQLBindParameter(hstmt, 4, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 6, 0, company_zip, 0, NULL);
+    if (retcode != SQL_SUCCESS && retcode != SQL_SUCCESS_WITH_INFO) {
+        fprintf(stderr, "Failed to bind company_zip parameter.\n");
+        goto exit;
+    }
+
+    retcode = SQLBindParameter(hstmt, 5, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 50, 0, company_city_converted, 0, NULL);
+    if (retcode != SQL_SUCCESS && retcode != SQL_SUCCESS_WITH_INFO) {
+        fprintf(stderr, "Failed to bind company_city parameter.\n");
+        goto exit;
+    }
+
+    retcode = SQLBindParameter(hstmt, 6, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 20, 0, company_phone, 0, NULL);
+    if (retcode != SQL_SUCCESS && retcode != SQL_SUCCESS_WITH_INFO) {
+        fprintf(stderr, "Failed to bind company_phone parameter.\n");
+        goto exit;
+    }
+
+    retcode = SQLBindParameter(hstmt, 7, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 20, 0, company_business_id, 0, NULL);
+    if (retcode != SQL_SUCCESS && retcode != SQL_SUCCESS_WITH_INFO) {
+        fprintf(stderr, "Failed to bind company_business_id parameter.\n");
+        goto exit;
+    }
+
+    // Execute the statement
+    retcode = SQLExecute(hstmt);
+    if (retcode != SQL_SUCCESS && retcode != SQL_SUCCESS_WITH_INFO) 
+    {
+
+        SQLCHAR sqlstate[6];
+        SQLINTEGER native_error;
+        SQLCHAR message_text[SQL_MAX_MESSAGE_LENGTH];
+        SQLSMALLINT text_length;
+
+        SQLRETURN retussi = SQLGetDiagRec(SQL_HANDLE_STMT, hstmt, 1, sqlstate, &native_error, message_text, sizeof(message_text), &text_length);
+        printf("Error executing the stored procedure: %s\n", message_text);
+        fprintf(stderr, "Failed to execute SQL statement.\n");
+        goto exit;
+    }
+
+    SQLRETURN g;
+    if (SQL_SUCCEEDED(retcode))
+    {
+        g = SQLMoreResults(hstmt);
+        while (g == SQL_NO_DATA)
+        {
+            printf("%d", id);
+            *company_id = id;
+            g = SQLMoreResults(hstmt);
+            if (g == SQL_NO_DATA)
+                break;
+        }
+    }
+
+exit:
+    free(company_name_converted);
+    free(company_address_converted);
+    free(company_city_converted);
+    // Clean up
+    if (hstmt != SQL_NULL_HSTMT) {
+        SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
+    }
+
+    dbClose();
+    return;
+}
+
 void getCompany(_In_ int company_id, _Out_ char** jsonStringCompany)
 {
     char fileName[21] = "connectionstring.txt";
@@ -1333,6 +1467,8 @@ void getCompany(_In_ int company_id, _Out_ char** jsonStringCompany)
     cJSON* root = cJSON_CreateObject();
     cJSON* company_name = NULL;
 
+    bool companyFound = false;
+
     if (retcode == SQL_SUCCESS || retcode == SQL_SUCCESS_WITH_INFO)
     {
         do 
@@ -1346,6 +1482,7 @@ void getCompany(_In_ int company_id, _Out_ char** jsonStringCompany)
             SQLCHAR     phone[LEN_PHONE];
             SQLCHAR     businessId[LEN_EMAIL];
 
+
             while (SQLFetch(hstmt) == SQL_SUCCESS)
             {
                 SQLGetData(hstmt, 1, SQL_C_SLONG, &companyId, 0, NULL);
@@ -1355,6 +1492,8 @@ void getCompany(_In_ int company_id, _Out_ char** jsonStringCompany)
                 SQLGetData(hstmt, 5, SQL_C_CHAR, city, sizeof(city), NULL);
                 SQLGetData(hstmt, 6, SQL_C_CHAR, phone, sizeof(phone), NULL);
                 SQLGetData(hstmt, 7, SQL_C_CHAR, businessId, sizeof(businessId), NULL);
+
+                companyFound = true;
 
                 //char* decodedCompanyName = NULL;
                 //decodeUTF8Encoding(companyName, &decodedCompanyName);
@@ -1372,14 +1511,17 @@ void getCompany(_In_ int company_id, _Out_ char** jsonStringCompany)
             }
         } while (SQLMoreResults(hstmt) == SQL_SUCCESS);
     }
-    char* archieCruzPlusIida = cJSON_Print(root);
+    if (companyFound)
+    {
+        char* archieCruzPlusIida = cJSON_Print(root);
 
-    printf("%s", archieCruzPlusIida);
+        printf("%s", archieCruzPlusIida);
 
-    *jsonStringCompany = archieCruzPlusIida;
-    /*g_company_json_data*/ global_json_data = *jsonStringCompany;
+        *jsonStringCompany = archieCruzPlusIida;
+        global_json_data = *jsonStringCompany;
 
-    cJSON_Delete(root);
+        cJSON_Delete(root);
+    }
 
     // Free the statement handle
     SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
@@ -1387,6 +1529,201 @@ void getCompany(_In_ int company_id, _Out_ char** jsonStringCompany)
     dbClose();
     return;
 }
+
+void addCompanyFromJson(_In_ const char* companyJson, _Out_ SQLINTEGER* company_id)
+{
+    char fileName[21] = "connectionstring.txt";
+    DBERROR* err = NULL;
+    dbOpen(fileName, &err);
+
+    if (err->errorCode < 0)
+    {
+        free(err);
+        return;
+    }
+    free(err);
+    err = NULL;
+
+    char* company_json_converted = NULL;
+    decodeUTF8Encoding(companyJson, &company_json_converted);
+
+    SQLHSTMT hstmt;
+    SQLRETURN retcode;
+
+    // Assuming the database connection is already established
+
+    char query[512] = "{? = CALL AddCompanyFromJson(?)}";
+
+    // Allocate a statement handle
+    retcode = SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
+    if (retcode != SQL_SUCCESS && retcode != SQL_SUCCESS_WITH_INFO) {
+        fprintf(stderr, "Failed to allocate statement handle.\n");
+        goto exit;
+    }
+
+    // Prepare the SQL statement to call the stored procedure
+    retcode = SQLPrepare(hstmt, (SQLCHAR*)query, SQL_NTS);
+    if (retcode != SQL_SUCCESS && retcode != SQL_SUCCESS_WITH_INFO) {
+        fprintf(stderr, "Failed to prepare SQL statement.\n");
+        goto exit;
+    }
+    SQLINTEGER id;
+    retcode = SQLBindParameter(hstmt, 1, SQL_PARAM_OUTPUT, SQL_C_SLONG, SQL_INTEGER, 0, 0, &id, 0, NULL);
+
+    // Bind the JSON input parameter
+    retcode = SQLBindParameter(hstmt, 2, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 0, 0, company_json_converted, strlen(company_json_converted), NULL);
+    if (retcode != SQL_SUCCESS && retcode != SQL_SUCCESS_WITH_INFO) {
+        SQLCHAR sqlstate[6];
+        SQLINTEGER native_error;
+        SQLCHAR message_text[SQL_MAX_MESSAGE_LENGTH];
+        SQLSMALLINT text_length;
+
+        SQLGetDiagRec(SQL_HANDLE_STMT, hstmt, 1, sqlstate, &native_error, message_text, sizeof(message_text), &text_length);
+        fprintf(stderr, "Failed to execute SQL statement. Error: %s\n", message_text);
+        goto exit;
+    }
+
+    // Execute the statement
+    retcode = SQLExecute(hstmt);
+    if (retcode != SQL_SUCCESS && retcode != SQL_SUCCESS_WITH_INFO) {
+        SQLCHAR sqlstate[6];
+        SQLINTEGER native_error;
+        SQLCHAR message_text[SQL_MAX_MESSAGE_LENGTH];
+        SQLSMALLINT text_length;
+
+        SQLGetDiagRec(SQL_HANDLE_STMT, hstmt, 1, sqlstate, &native_error, message_text, sizeof(message_text), &text_length);
+        fprintf(stderr, "Failed to execute SQL statement. Error: %s\n", message_text);
+        goto exit;
+    }
+
+    SQLRETURN g;
+    if (SQL_SUCCEEDED(retcode))
+    {
+        g = SQLMoreResults(hstmt);
+        while (g == SQL_NO_DATA)
+        {
+            printf("%d", id);
+            *company_id = id;
+            g = SQLMoreResults(hstmt);
+            if (g == SQL_NO_DATA)
+                break;
+        }
+    }
+
+    free(company_json_converted);
+
+    // Clean up
+exit:
+    SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
+    dbClose();
+    return;
+}
+
+
+/**
+ * updateCompany
+ */
+SQLRETURN updateCompany(
+    _In_ int id, 
+    _In_ char* company_name, 
+    _In_ char* company_address,
+    _In_ char* company_zip, 
+    _In_ char* company_city, 
+    _In_ char* company_phone,
+    _In_ char* company_business_id)
+{
+    char fileName[21] = "connectionstring.txt";
+    DBERROR* err = NULL;
+    dbOpen(fileName, &err);
+
+    if (err->errorCode < 0)
+    {
+        free(err);
+        return;
+    }
+    free(err);
+    err = NULL;
+
+    char* company_name_converted = NULL;
+    decodeUTF8Encoding(company_name, &company_name_converted);
+
+    char* company_address_converted = NULL;
+    decodeUTF8Encoding(company_address, &company_address_converted);
+
+    char* company_city_converted = NULL;
+    decodeUTF8Encoding(company_city, &company_city_converted);
+
+    SQLHSTMT hstmt;
+
+    // Prepare the call to the stored procedure
+    SQLCHAR* sqlStatement = "{call UpdateCompany (?, ?, ?, ?, ?, ?, ?)}";
+
+    // Allocate a statement handle
+    SQLRETURN r = SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
+
+    r = SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER, 0, 0, &id, 0, NULL);
+
+    // Bind parameters to placeholders
+    SQLRETURN ret = SQLBindParameter(hstmt, 2, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 0, 0, company_name_converted, strlen(company_name_converted), NULL);
+    if (ret != SQL_SUCCESS) 
+    {
+        goto exit;
+    }
+
+    ret = SQLBindParameter(hstmt, 3, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 0, 0, company_address_converted, strlen(company_address_converted), NULL);
+    if (ret != SQL_SUCCESS) 
+    {
+        goto exit;
+    }
+
+    ret = SQLBindParameter(hstmt, 4, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 0, 0, company_zip, strlen(company_zip), NULL);
+    if (ret != SQL_SUCCESS) 
+    {
+        goto exit;
+    }
+
+    ret = SQLBindParameter(hstmt, 5, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 0, 0, company_city_converted, strlen(company_city_converted), NULL);
+    if (ret != SQL_SUCCESS) {
+        goto exit;
+    }
+
+    ret = SQLBindParameter(hstmt, 6, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 0, 0, company_phone, strlen(company_phone), NULL);
+    if (ret != SQL_SUCCESS) {
+        goto exit;
+    }
+
+    ret = SQLBindParameter(hstmt, 7, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 0, 0, company_business_id, strlen(company_business_id), NULL);
+    if (ret != SQL_SUCCESS) {
+        goto exit;
+    }
+
+    // Execute stored procedure
+    ret = SQLExecDirect(hstmt, (SQLCHAR*)sqlStatement, SQL_NTS);
+
+    if (ret != SQL_SUCCESS && ret != 100)
+    {
+        SQLCHAR sqlstate[6];
+        SQLINTEGER native_error;
+        SQLCHAR message_text[SQL_MAX_MESSAGE_LENGTH];
+        SQLSMALLINT text_length;
+
+        SQLRETURN retussi = SQLGetDiagRec(SQL_HANDLE_STMT, hstmt, 1, sqlstate, &native_error, message_text, sizeof(message_text), &text_length);
+        printf("Error executing the stored procedure: %s\n", message_text);
+    }
+
+    // Free resources (recommended although not strictly necessary here)
+    // Free the statement handle
+    SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
+
+    free(company_name_converted);
+    free(company_address_converted);
+    free(company_city_converted);
+
+exit:
+    dbClose();
+    return ret;
+}
+
 
 /**
 * This function ...
@@ -2065,14 +2402,13 @@ void addCustomer(
         // Allocate a statement handle
         SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
 
-        SQLBindParameter(hstmt, 1, SQL_PARAM_OUTPUT, SQL_C_SLONG, SQL_INTEGER,  0, 0, &id,                          0, NULL);
-        SQLBindParameter(hstmt, 2, SQL_PARAM_INPUT,  SQL_C_CHAR, SQL_VARCHAR,  50, 0, customer_firstName_decoded,   0, NULL);
-        SQLBindParameter(hstmt, 3, SQL_PARAM_INPUT,  SQL_C_CHAR, SQL_VARCHAR,  50, 0, customer_lastName_decoded,    0, NULL);
-        SQLBindParameter(hstmt, 4, SQL_PARAM_INPUT,  SQL_C_CHAR, SQL_VARCHAR, 100, 0, customer_address_decoded,     0, NULL);
-        SQLBindParameter(hstmt, 5, SQL_PARAM_INPUT,  SQL_C_CHAR, SQL_VARCHAR, 100, 0, customer_zip,                 0, NULL);
-        SQLBindParameter(hstmt, 6, SQL_PARAM_INPUT,  SQL_C_CHAR, SQL_VARCHAR,  50, 0, customer_city_decoded,        0, NULL);
-        SQLBindParameter(hstmt, 7, SQL_PARAM_INPUT,  SQL_C_CHAR, SQL_VARCHAR,  20, 0, customer_phone,               0, NULL);
-        SQLBindParameter(hstmt, 8, SQL_PARAM_INPUT,  SQL_C_CHAR, SQL_VARCHAR, 100, 0, customer_email,               0, NULL);
+        SQLBindParameter(hstmt, 1, SQL_PARAM_OUTPUT, SQL_C_SLONG, SQL_INTEGER,   0, 0, &id,                          0, NULL);
+        SQLBindParameter(hstmt, 2, SQL_PARAM_INPUT,  SQL_C_CHAR,  SQL_VARCHAR,  50, 0, customer_firstName_decoded,   0, NULL);
+        SQLBindParameter(hstmt, 3, SQL_PARAM_INPUT,  SQL_C_CHAR,  SQL_VARCHAR, 100, 0, customer_address_decoded,     0, NULL);
+        SQLBindParameter(hstmt, 5, SQL_PARAM_INPUT,  SQL_C_CHAR,  SQL_VARCHAR, 100, 0, customer_zip,                 0, NULL);
+        SQLBindParameter(hstmt, 6, SQL_PARAM_INPUT,  SQL_C_CHAR,  SQL_VARCHAR,  50, 0, customer_city_decoded,        0, NULL);
+        SQLBindParameter(hstmt, 7, SQL_PARAM_INPUT,  SQL_C_CHAR,  SQL_VARCHAR,  20, 0, customer_phone,               0, NULL);
+        SQLBindParameter(hstmt, 8, SQL_PARAM_INPUT,  SQL_C_CHAR,  SQL_VARCHAR, 100, 0, customer_email,               0, NULL);
 
         // Prepare the SQL statement
         ret = SQLPrepare(hstmt, query, SQL_NTS);
@@ -2106,6 +2442,97 @@ void addCustomer(
 
     dbClose();
 }
+
+void addCustomerFromJson(_In_ const char* customerJson, _Out_ SQLINTEGER* customer_id)
+{
+    char fileName[21] = "connectionstring.txt";
+    DBERROR* err = NULL;
+    dbOpen(fileName, &err);
+
+    if (err->errorCode < 0)
+    {
+        free(err);
+        return;
+    }
+    free(err);
+    err = NULL;
+
+    char* customer_json_converted = NULL;
+    decodeUTF8Encoding(customerJson, &customer_json_converted);
+
+    SQLHSTMT hstmt;
+    SQLRETURN retcode;
+
+    // Assuming the database connection is already established
+
+    char query[512] = "{? = CALL InsertCustomerFromJson(?)}";
+
+    // Allocate a statement handle
+    retcode = SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
+    if (retcode != SQL_SUCCESS && retcode != SQL_SUCCESS_WITH_INFO) {
+        fprintf(stderr, "Failed to allocate statement handle.\n");
+        goto exit;
+    }
+
+    // Prepare the SQL statement to call the stored procedure
+    retcode = SQLPrepare(hstmt, (SQLCHAR*)query, SQL_NTS);
+    if (retcode != SQL_SUCCESS && retcode != SQL_SUCCESS_WITH_INFO) {
+        fprintf(stderr, "Failed to prepare SQL statement.\n");
+        goto exit;
+    }
+
+    SQLINTEGER id;
+    retcode = SQLBindParameter(hstmt, 1, SQL_PARAM_OUTPUT, SQL_C_SLONG, SQL_INTEGER, 0, 0, &id, 0, NULL);
+
+    // Bind the JSON input parameter
+    retcode = SQLBindParameter(hstmt, 2, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 0, 0, customer_json_converted, strlen(customer_json_converted), NULL);
+    if (retcode != SQL_SUCCESS && retcode != SQL_SUCCESS_WITH_INFO) {
+        SQLCHAR sqlstate[6];
+        SQLINTEGER native_error;
+        SQLCHAR message_text[SQL_MAX_MESSAGE_LENGTH];
+        SQLSMALLINT text_length;
+
+        SQLGetDiagRec(SQL_HANDLE_STMT, hstmt, 1, sqlstate, &native_error, message_text, sizeof(message_text), &text_length);
+        fprintf(stderr, "Failed to execute SQL statement. Error: %s\n", message_text);
+        goto exit;
+    }
+
+    // Execute the statement
+    retcode = SQLExecute(hstmt);
+    if (retcode != SQL_SUCCESS && retcode != SQL_SUCCESS_WITH_INFO) {
+        SQLCHAR sqlstate[6];
+        SQLINTEGER native_error;
+        SQLCHAR message_text[SQL_MAX_MESSAGE_LENGTH];
+        SQLSMALLINT text_length;
+
+        SQLGetDiagRec(SQL_HANDLE_STMT, hstmt, 1, sqlstate, &native_error, message_text, sizeof(message_text), &text_length);
+        fprintf(stderr, "Failed to execute SQL statement. Error: %s\n", message_text);
+        goto exit;
+    }
+
+    SQLRETURN g;
+    if (SQL_SUCCEEDED(retcode))
+    {
+        g = SQLMoreResults(hstmt);
+        while (g == SQL_NO_DATA)
+        {
+            printf("%d", id);
+            *customer_id = id;
+            g = SQLMoreResults(hstmt);
+            if (g == SQL_NO_DATA)
+                break;
+        }
+    }
+
+    free(customer_json_converted);
+
+    // Clean up
+exit:
+    SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
+    dbClose();
+    return;
+}
+
 
 
 void DisplayError(SQLCHAR* sqlState, SQLINTEGER nativeError, SQLCHAR* message, SQLSMALLINT msgLen) {

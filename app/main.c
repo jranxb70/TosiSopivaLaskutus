@@ -79,6 +79,76 @@ void testUpdateForCustomer()
         _In_ (char*) email);
 }
 
+void testUpdateCompany()
+{
+    int id = 3;
+    char company_name[50] = "Ponkä Oy";
+    char company_address[100] = "Pasikuja 7";
+    char company_zip[6] = "22100"; 
+    char company_city[20] = "Meripori";
+    char company_phone[30] = "930-1239998";
+    char company_business_id[30] = "87633622-9";
+
+    updateCompany((int) id, (char*) company_name, (char*) company_address,
+        (char*) company_zip, (char*) company_city, (char*) company_phone,
+        (char*) company_business_id);
+}
+
+void addCompanyTest()
+{
+    char company_name[50] = "tmi Pasi Pönkä";
+    char company_address[50] = "Pönkäleenkuja 17";
+    char company_zip[6] = "60100";
+    char company_city[30] = "Seinäjoki";
+    char company_phone[30] = "964-1288877"; 
+    char company_business_id[13] = "8733645-0";
+        _Out_ int company_id;
+   addCompany(
+        _In_  (const char*) company_name,
+        _In_  (const char*) company_address,
+        _In_  (const char*) company_zip,
+        _In_  (const char*) company_city,
+        _In_  (const char*) company_phone,
+        _In_  (const char*) company_business_id,
+        _Out_ (int*) &company_id);
+}
+
+void addCompanyJsonTest()
+{
+
+    char companyJson[2048];
+
+    char company_name[50] = "tmi Pasi Pönkä";
+    char company_address[50] = "Pönkäleenkuja 17";
+    char company_zip[6] = "60100";
+    char company_city[30] = "Seinäjoki";
+    char company_phone[30] = "964-1288877";
+    char company_business_id[13] = "8733645-0";
+
+    snprintf(companyJson, sizeof(companyJson), "{\"company_name\": \"%s\", \"company_address\": \"%s\", \"company_zip\": \"%s\", \"company_city\": \"%s\", \"company_phone\" : \"%s\", \"company_business_id\": \"%s\"}",
+        company_name, company_address, company_zip, company_city, company_phone, company_business_id);
+    // char companyJson[2048] = "";
+    SQLINTEGER company_id;
+    addCompanyFromJson(companyJson, &company_id);
+}
+
+void addCustomerFromJsonTest()
+{
+    char customerJson[2048] = "{\"customer_type\": \"C\", \"customer_address\": \"123 Tech Street\", \"customer_phone\": \"123 - 456 - 7890\", \"customer_email\": \"contact@techcorp.com\", \"company_business_id\": \"123456789\", \"company_taxid\": \"987654321\", \"company_name\": \"TechCorp\"}";
+    _Out_ SQLINTEGER customer_id;
+    addCustomerFromJson(customerJson, &customer_id);
+}
+
+void testGetCompaniesAsJson()
+{
+    char* json = NULL;
+    int i;
+    node_t* errorList = NULL;
+    queryCustomersAsJson(&json, &errorList);
+    free_json_data();
+    free_sql_error_details();
+}
+
 
 int main(int argc, char *argv[])
 {
@@ -87,7 +157,11 @@ int main(int argc, char *argv[])
         fprintf(stdout, "%s\n", "Insufficient input - enter a value.");
         return 1;
     }
-
+    testGetCompaniesAsJson();
+    addCustomerFromJsonTest();
+    addCompanyJsonTest();
+    addCompanyTest();
+    testUpdateCompany();
     testEAN();
     //return 0;
 
@@ -96,7 +170,8 @@ int main(int argc, char *argv[])
     int d = deleteInvoice(52);
 
     char* jsonStringCompany = NULL;
-    int company_id = 1;
+    int company_id = 2;
+    //TODO: if there is no such id, that must return
     getCompany(_In_ (int) company_id, _Out_ (char**) &jsonStringCompany);
 
     free_json_data();
@@ -135,13 +210,13 @@ int main(int argc, char *argv[])
     free(decodedCharArray);
     testUpdateForCustomer();
 
-    char* jsonX = NULL;
-    node_t* errsX = NULL;
-    queryCustomers(&jsonX, &errsX);
-    int succeededX = free_json_data();
-    free_sql_error_details();
+    //char* jsonX = NULL;
+    //node_t* errsX = NULL;
+    //queryCustomers(&jsonX, &errsX);
+    //int succeededX = free_json_data();
+    //free_sql_error_details();
 
-    free(jsonX);
+    //free(jsonX);
 
 
     queryInvoiceByInvoiceId();

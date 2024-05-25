@@ -10,6 +10,7 @@
 #define LEN_COMPANY_NAME                31
 #define LEN_FIRST_NAME                  51
 #define LEN_LAST_NAME                   51
+#define LEN_NAME                        51
 #define LEN_ADDRESS                     101
 #define LEN_ZIP                         6
 #define LEN_CITY                        51 
@@ -1098,7 +1099,7 @@ void queryProductItemByEAN(
 }
 
 
-void queryInvoiceById(_In_ int invoice_id, _Out_ char** jsonString, _Out_ node_t** errorList)
+void queryInvoiceByIdOld(_In_ int invoice_id, _Out_ char** jsonString, _Out_ node_t** errorList)
 {
     char fileName[21] = "connectionstring.txt";
     DBERROR* err = NULL;
@@ -1288,6 +1289,173 @@ void queryInvoiceById(_In_ int invoice_id, _Out_ char** jsonString, _Out_ node_t
 
     dbClose();
 }
+
+void queryInvoiceById(_In_ int invoice_id, _Out_ char** jsonString, _Out_ node_t** errorList)
+{
+    char fileName[21] = "connectionstring.txt";
+    DBERROR* err = NULL;
+    dbOpen(fileName, &err);
+
+    if (err && err->errorCode < 0)
+    {
+        free(err);
+        return;
+    }
+    free(err);
+    err = NULL;
+
+    SQLHSTMT hstmt;
+    SQLRETURN retcode;
+    node_t* internalErrorList = NULL;
+
+    // Allocate statement handle
+    retcode = SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
+    if (retcode != SQL_SUCCESS && retcode != SQL_SUCCESS_WITH_INFO) {
+        // Handle error
+        SQLErrorUtil(retcode, hstmt, &internalErrorList);
+        *errorList = internalErrorList;
+        return;
+    }
+
+    // Prepare stored procedure call
+    char call[256];
+    sprintf(call, "{call GetInvoiceData3(?)}");
+
+    // Bind the parameter
+    SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER, 0, 0, &invoice_id, 0, NULL);
+
+    // Execute stored procedure
+    retcode = SQLExecDirect(hstmt, (SQLCHAR*)call, SQL_NTS);
+
+    if (retcode != SQL_SUCCESS && retcode != SQL_SUCCESS_WITH_INFO) {
+        // Handle error
+        SQLErrorUtil(retcode, hstmt, &internalErrorList);
+        *errorList = internalErrorList;
+        SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
+        dbClose();
+        return;
+    }
+
+    cJSON* root = cJSON_CreateObject();
+    cJSON* invoice_lines = cJSON_CreateArray();
+
+    // Process the rows and fetch data
+    if (retcode == SQL_SUCCESS || retcode == SQL_SUCCESS_WITH_INFO)
+    {
+        do {
+            SQLCHAR columnName[64];
+            SQLSMALLINT columnNameLength;
+
+            SQLRETURN ret = SQLDescribeCol(hstmt, 1, columnName, sizeof(columnName), &columnNameLength, NULL, NULL, NULL, NULL);
+
+            if (strcmp((char*)columnName, "customer_id") == 0)
+            {
+                // Process the invoice data
+                SQLINTEGER  customerId;
+                SQLCHAR     firstName[LEN_FIRST_NAME] = { 0 };
+                SQLCHAR     lastName[LEN_LAST_NAME] = { 0 };
+                SQLCHAR     name[LEN_NAME] = { 0 };
+                SQLCHAR     address[LEN_ADDRESS];
+                SQLCHAR     zip[LEN_ZIP];
+                SQLCHAR     city[LEN_CITY];
+                SQLCHAR     phone[LEN_PHONE];
+                SQLCHAR     email[LEN_EMAIL];
+
+                SQLINTEGER  invoiceId;
+                SQLCHAR     date[LEN_DATE];
+                SQLCHAR     invoice_bank_reference[LEN_BANK_REF];
+                SQLBIGINT   invoice_subtotal;
+                SQLBIGINT   invoice_tax;
+                SQLBIGINT   invoice_total;
+
+                SQLCHAR     invoice_due_date[LEN_DUE_DATE];
+                SQLBIGINT   outstanding_balance = 0;
+
+                while (SQLFetch(hstmt) == SQL_SUCCESS)
+                {
+                    SQLLEN phoneLen, emailLen, invoice_due_dateLen;
+
+                    SQLGetData(hstmt, 1, SQL_C_SLONG, &customerId, 0, NULL);
+                    SQLGetData(hstmt, 2, SQL_C_CHAR, firstName, sizeof(firstName), NULL);
+                    SQLGetData(hstmt, 3, SQL_C_CHAR, lastName, sizeof(lastName), NULL);
+                    SQLGetData(hstmt, 4, SQL_C_CHAR, name, sizeof(name), NULL);
+                    SQLGetData(hstmt, 5, SQL_C_CHAR, address, sizeof(address), NULL);
+                    SQLGetData(hstmt, 6, SQL_C_CHAR, zip, sizeof(zip), NULL);
+                    SQLGetData(hstmt, 7, SQL_C_CHAR, city, sizeof(city), NULL);
+                    SQLGetData(hstmt, 8, SQL_C_CHAR, phone, sizeof(phone), &phoneLen);
+                    SQLGetData(hstmt, 9, SQL_C_CHAR, email, sizeof(email), &emailLen);
+                    SQLGetData(hstmt, 10, SQL_C_SLONG, &invoiceId, 0, NULL);
+                    SQLGetData(hstmt, 11, SQL_C_CHAR, date, sizeof(date), NULL);
+                    SQLGetData(hstmt, 12, SQL_C_CHAR, invoice_bank_reference, sizeof(invoice_bank_reference), NULL);
+                    SQLGetData(hstmt, 13, SQL_C_SBIGINT, &invoice_subtotal, 0, NULL);
+                    SQLGetData(hstmt, 14, SQL_C_SBIGINT, &invoice_tax, 0, NULL);
+                    SQLGetData(hstmt, 15, SQL_C_SBIGINT, &invoice_total, 0, NULL);
+                    SQLGetData(hstmt, 16, SQL_C_CHAR, invoice_due_date, sizeof(invoice_due_date), &invoice_due_dateLen);
+                    SQLGetData(hstmt, 17, SQL_C_SBIGINT, &outstanding_balance, 0, NULL);
+
+                    if (phoneLen == SQL_NULL_DATA)
+                    {
+                        strcpy_s(phone, sizeof(phone), "N/A");
+                    }
+                    if (emailLen == SQL_NULL_DATA)
+                    {
+                        strcpy_s(email, sizeof(email), "N/A");
+                    }
+                    if (invoice_due_dateLen == SQL_NULL_DATA)
+                    {
+                        strcpy_s(invoice_due_date, sizeof(invoice_due_date), "N/A");
+                    }
+
+                    printf("Customer ID: %d, First name: %s, Last name: %s, Name: %s, Address: %s, Zip: %s, City: %s, Phone: %s, Email: %s\n",
+                        customerId, firstName, lastName, name, address, zip, city, phone, email);
+
+                    cJSON_AddNumberToObject(root, "customer_id", customerId);
+                    if (strlen((char*)firstName) > 0 && strlen((char*)lastName) > 0)
+                    {
+                        cJSON_AddStringToObject(root, "first_name", firstName);
+                        cJSON_AddStringToObject(root, "last_name", lastName);
+                    }
+                    if (strlen((char*)name) > 0)
+                    {
+                        cJSON_AddStringToObject(root, "name", name);
+                    }
+                    cJSON_AddStringToObject(root, "address", address);
+                    cJSON_AddStringToObject(root, "zip", zip);
+                    cJSON_AddStringToObject(root, "city", city);
+                    cJSON_AddStringToObject(root, "phone", phone);
+                    cJSON_AddStringToObject(root, "email", email);
+                    cJSON_AddNumberToObject(root, "invoice_id", invoiceId);
+                    cJSON_AddStringToObject(root, "invoice_date", date);
+                    cJSON_AddStringToObject(root, "invoice_bank_reference", invoice_bank_reference);
+                    cJSON_AddNumberToObject(root, "invoice_subtotal", invoice_subtotal);
+                    cJSON_AddNumberToObject(root, "invoice_tax", invoice_tax);
+                    cJSON_AddNumberToObject(root, "invoice_total", invoice_total);
+                    cJSON_AddStringToObject(root, "invoice_due_date", invoice_due_date);
+                    cJSON_AddNumberToObject(root, "invoice_outstanding_balance", outstanding_balance);
+
+                    cJSON_AddItemToObject(root, "invoice_lines", invoice_lines);
+                }
+            }
+            else if (strcmp((char*)columnName, "invoice_line_id") == 0)
+            {
+                fetchInvoiceLineDataAsJson(&hstmt, &invoice_lines);
+            }
+        } while (SQLMoreResults(hstmt) == SQL_SUCCESS);
+    }
+
+    char* resultJson = cJSON_Print(root);
+    printf("%s", resultJson);
+
+    *jsonString = resultJson;
+
+    cJSON_Delete(root);
+
+    // Free the statement handle
+    SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
+
+    dbClose();
+}
+
 
 // Function to add a company using a stored procedure in SQL Server
 void addCompany(
@@ -1757,7 +1925,7 @@ void queryInvoicesByCustomer(_In_ int customer_id, _Out_ char** jsonString, _Out
 
     // Prepare stored procedure call
     char call[256];
-    sprintf(call, "{call GetCustomerInvoices(?)}");
+    sprintf(call, "{call GetCustomerInvoicesCIC(?)}"); //[GetCustomerInvoicesAsJson]
 
     // Bind the parameter
     SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER, 0, 0, &customer_id, 0, NULL);

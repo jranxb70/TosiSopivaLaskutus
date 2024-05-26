@@ -149,6 +149,26 @@ void testGetCompaniesAsJson()
     free_sql_error_details();
 }
 
+void testQueryInvoiceById()
+{
+    int invoice_id = 1;
+    node_t* errorList = NULL;
+    char* jsonString = NULL;
+    queryInvoiceById(_In_ (int) invoice_id, _Out_ (char**) &jsonString, _Out_ (node_t **) &errorList);
+    free_json_data();
+    free_sql_error_details();
+}
+
+void testqueryInvoicesByCustomer()
+{
+    int customer_id = 1;
+    _Out_ char* jsonString = NULL;
+    _Out_ node_t* errorList = NULL;
+    queryInvoicesByCustomer(_In_(int) customer_id, _Out_(char**) & jsonString, _Out_(node_t**) & errorList);
+    free_json_data();
+    free_sql_error_details();
+}
+
 
 int main(int argc, char *argv[])
 {
@@ -157,13 +177,15 @@ int main(int argc, char *argv[])
         fprintf(stdout, "%s\n", "Insufficient input - enter a value.");
         return 1;
     }
-    testGetCompaniesAsJson();
-    addCustomerFromJsonTest();
-    addCompanyJsonTest();
-    addCompanyTest();
-    testUpdateCompany();
-    testEAN();
-    //return 0;
+    testqueryInvoicesByCustomer();
+    //testQueryInvoiceById();
+    //testGetCompaniesAsJson();
+    //addCustomerFromJsonTest();
+    //addCompanyJsonTest();
+    //addCompanyTest();
+    //testUpdateCompany();
+    //testEAN();
+    return 0;
 
     int del = updateInvoice(311, 1, "2024-03-01 0:00:00.0000000", "12783", 0, 0, 0, "2024-03-15", 0);
     

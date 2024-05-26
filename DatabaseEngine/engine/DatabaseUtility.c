@@ -46,11 +46,11 @@ int fetchInvoiceLineDataAsJson(SQLHSTMT* hstmtP, cJSON** rtt)
         // If invoices is null we are (probably) dealing with queryInvoiceById
         cJSON* invoices = cJSON_GetObjectItem(root, "invoices");
         int arraySizeInvoices = -1;
-        cJSON* invoice_lines = NULL;
+        //cJSON* invoice_lines = NULL;
         if (!invoices)
         {
-            invoice_lines = cJSON_GetObjectItem(root, "invoice_lines");
-            cJSON_AddItemReferenceToArray(invoice_lines, invoice_line);
+            //invoice_lines = cJSON_GetObjectItem(root, "invoice_lines");
+            cJSON_AddItemToArray(*rtt, invoice_line);
         }
         else
         {
@@ -66,7 +66,7 @@ int fetchInvoiceLineDataAsJson(SQLHSTMT* hstmtP, cJSON** rtt)
             if (invoiceId == (int)wtf)
             {
                 cJSON* invoice_lines = cJSON_GetObjectItem(invoice, "invoice_lines");
-                cJSON_AddItemReferenceToArray(invoice_lines, invoice_line);
+                cJSON_AddItemToArray(invoice_lines, invoice_line);
                 break;
             }
         }

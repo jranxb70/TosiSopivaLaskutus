@@ -45,14 +45,17 @@ extern "C" {
 #endif
 
 	void DB_ENGINE_LIBRARY_EXPORT dbOpenCloseTest(
-		_In_ char* fileName,
+		_In_ char*   fileName,
 		_Out_ char** dbErrMsg);
 
 	void DB_ENGINE_LIBRARY_EXPORT queryProductItemByEAN(
-		_In_  char* ean, 
+		_In_  char*  ean, 
 		_Out_ char** json_output);
 
-	void DB_ENGINE_LIBRARY_EXPORT FetchCustomerData(char* inputParam, int isAPhoneNumber, char** json_output);
+	void DB_ENGINE_LIBRARY_EXPORT fetchCustomerData(
+		_In_ char*   inputParam,
+		_In_ int     isAPhoneNumber,
+		_Out_ char** json_output);
 
 	int DB_ENGINE_LIBRARY_EXPORT addDBUser(
 		_In_ char*					login,

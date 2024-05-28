@@ -25,7 +25,7 @@ void testEAN()
     char* json_out = NULL;
     int isAPhoneNumber = 0;
     char* inputParam = "Viitala";
-    FetchCustomerData((char*) inputParam, (int) isAPhoneNumber, (char**) &json_out);
+    fetchCustomerData((char*) inputParam, (int) isAPhoneNumber, (char**) &json_out);
     free_json_data();
 
     char lastName[14] = "6438460761591";
@@ -161,7 +161,7 @@ void testQueryInvoiceById()
 
 void testqueryInvoicesByCustomer()
 {
-    int customer_id = 1;
+    int customer_id = 3;
     _Out_ char* jsonString = NULL;
     _Out_ node_t* errorList = NULL;
     queryInvoicesByCustomer(_In_(int) customer_id, _Out_(char**) & jsonString, _Out_(node_t**) & errorList);

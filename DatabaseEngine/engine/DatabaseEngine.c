@@ -353,9 +353,11 @@ int deleteCustomer(_In_ long customer_id)
     return countDeleted;
 }
 
-void FetchCustomerData(char* inputParam, int isAPhoneNumber, char** json_output)
+void fetchCustomerData(
+    _In_ char* inputParam, 
+    _In_ int isAPhoneNumber, 
+    _Out_ char** json_output)
 {
-
     char fileName[21] = "connectionstring.txt";
     DBERROR* err = NULL;
     dbOpen(fileName, &err);
@@ -363,11 +365,14 @@ void FetchCustomerData(char* inputParam, int isAPhoneNumber, char** json_output)
     if (err->errorCode < 0)
     {
         free(err);
-        return -1;
+        return;
     }
 
     free(err);
     err = NULL;
+
+    char* inputParam_converted = NULL;
+    decodeUTF8Encoding(inputParam, &inputParam_converted);
 
     SQLHSTMT hstmt;
     // Allocate a statement handle
@@ -377,7 +382,7 @@ void FetchCustomerData(char* inputParam, int isAPhoneNumber, char** json_output)
     SQLCHAR outJson[SQL_JSON_RESULT_LEN];
 
     // Bind parameters
-    SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 255, 0, inputParam, 0, NULL);
+    SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 255, 0, inputParam_converted, 0, NULL);
     SQLBindParameter(hstmt, 2, SQL_PARAM_INPUT, SQL_C_BIT, SQL_BIT, 0, 0, &isAPhoneNumber, 0, NULL);
 
     // Execute SQL command
@@ -403,6 +408,8 @@ void FetchCustomerData(char* inputParam, int isAPhoneNumber, char** json_output)
         global_json_data = *json_output;
     }
 
+    free(inputParam_converted);
+
     // Free statement handle
     SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
 
@@ -418,7 +425,7 @@ void queryProductItemByEANTemp(char* ean, char** json_output)
     if (err->errorCode < 0)
     {
         free(err);
-        return -1;
+        return;
     }
     int ret = err->errorCode;
     free(err);
@@ -577,7 +584,7 @@ int updateInvoice(
     if (err->errorCode < 0)
     {
         free(err);
-        return;
+        return -1;
     }
     int ret = err->errorCode;
     free(err);

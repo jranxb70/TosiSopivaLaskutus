@@ -177,14 +177,14 @@ int main(int argc, char *argv[])
         fprintf(stdout, "%s\n", "Insufficient input - enter a value.");
         return 1;
     }
-    testqueryInvoicesByCustomer();
+    //testqueryInvoicesByCustomer();
     //testQueryInvoiceById();
     //testGetCompaniesAsJson();
     //addCustomerFromJsonTest();
     //addCompanyJsonTest();
     //addCompanyTest();
     //testUpdateCompany();
-    //testEAN();
+    testEAN();
     return 0;
 
     int del = updateInvoice(311, 1, "2024-03-01 0:00:00.0000000", "12783", 0, 0, 0, "2024-03-15", 0);

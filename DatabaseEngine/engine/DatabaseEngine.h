@@ -90,6 +90,7 @@ extern "C" {
 		_In_ char* company_zip, 
 		_In_ char* company_city, 
 		_In_ char* company_phone,
+		_In_ char* company_email,
 		_In_ char* company_business_id);
 
 	int  DB_ENGINE_LIBRARY_EXPORT addNewInvoiceData(

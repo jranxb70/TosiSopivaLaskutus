@@ -1660,7 +1660,7 @@ void getCompany(_In_ int company_id, _Out_ char** jsonStringCompany)
 
     // Prepare stored procedure call
     char call[256];
-    sprintf(call, "{call GetCompany(?)}");
+    sprintf(call, "{call GetBillingEntity(?)}");
 
     // Bind the parameter
     SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER, 0, 0, &sql_company_id, 0, NULL);
@@ -1684,6 +1684,7 @@ void getCompany(_In_ int company_id, _Out_ char** jsonStringCompany)
             SQLCHAR     zip[LEN_ZIP];
             SQLCHAR     city[LEN_CITY];
             SQLCHAR     phone[LEN_PHONE];
+            SQLCHAR     email[LEN_EMAIL];
             SQLCHAR     businessId[LEN_EMAIL];
 
 
@@ -1695,7 +1696,8 @@ void getCompany(_In_ int company_id, _Out_ char** jsonStringCompany)
                 SQLGetData(hstmt, 4, SQL_C_CHAR, zip, sizeof(zip), NULL);
                 SQLGetData(hstmt, 5, SQL_C_CHAR, city, sizeof(city), NULL);
                 SQLGetData(hstmt, 6, SQL_C_CHAR, phone, sizeof(phone), NULL);
-                SQLGetData(hstmt, 7, SQL_C_CHAR, businessId, sizeof(businessId), NULL);
+                SQLGetData(hstmt, 7, SQL_C_CHAR, email, sizeof(email), NULL);
+                SQLGetData(hstmt, 8, SQL_C_CHAR, businessId, sizeof(businessId), NULL);
 
                 companyFound = true;
 
@@ -1709,6 +1711,7 @@ void getCompany(_In_ int company_id, _Out_ char** jsonStringCompany)
                 cJSON_AddStringToObject(root, "company_zip", zip);
                 cJSON_AddStringToObject(root, "company_city", city);
                 cJSON_AddStringToObject(root, "company_phone", phone);
+                cJSON_AddStringToObject(root, "company_email", email);
                 cJSON_AddStringToObject(root, "company_business_id", businessId);
 
                 //free(decodedCompanyName);
@@ -1756,7 +1759,7 @@ void addCompanyFromJson(_In_ const char* companyJson, _Out_ SQLINTEGER* company_
 
     // Assuming the database connection is already established
 
-    char query[512] = "{? = CALL AddCompanyFromJson(?)}";
+    char query[512] = "{? = CALL AddBillingEntityFromJson(?)}";
 
     // Allocate a statement handle
     retcode = SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
@@ -1834,6 +1837,7 @@ SQLRETURN updateCompany(
     _In_ char* company_zip, 
     _In_ char* company_city, 
     _In_ char* company_phone,
+    _In_ char* company_email,
     _In_ char* company_business_id)
 {
     char fileName[21] = "connectionstring.txt";
@@ -1860,7 +1864,7 @@ SQLRETURN updateCompany(
     SQLHSTMT hstmt;
 
     // Prepare the call to the stored procedure
-    SQLCHAR* sqlStatement = "{call UpdateCompany (?, ?, ?, ?, ?, ?, ?)}";
+    SQLCHAR* sqlStatement = "{call UpdateBillingEntity(?, ?, ?, ?, ?, ?, ?, ?)}";
 
     // Allocate a statement handle
     SQLRETURN r = SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
@@ -1896,7 +1900,12 @@ SQLRETURN updateCompany(
         goto exit;
     }
 
-    ret = SQLBindParameter(hstmt, 7, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 0, 0, company_business_id, strlen(company_business_id), NULL);
+    ret = SQLBindParameter(hstmt, 7, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 0, 0, company_email, strlen(company_email), NULL);
+    if (ret != SQL_SUCCESS) {
+        goto exit;
+    }
+
+    ret = SQLBindParameter(hstmt, 8, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 0, 0, company_business_id, strlen(company_business_id), NULL);
     if (ret != SQL_SUCCESS) {
         goto exit;
     }

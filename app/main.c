@@ -81,16 +81,17 @@ void testUpdateForCustomer()
 
 void testUpdateCompany()
 {
-    int id = 3;
+    int id = 1;
     char company_name[50] = "Ponkä Oy";
     char company_address[100] = "Pasikuja 7";
     char company_zip[6] = "22100"; 
     char company_city[20] = "Meripori";
     char company_phone[30] = "930-1239998";
+    char company_email[30] = "pasi.ponka@alavittuile.com";
     char company_business_id[30] = "87633622-9";
 
     updateCompany((int) id, (char*) company_name, (char*) company_address,
-        (char*) company_zip, (char*) company_city, (char*) company_phone,
+        (char*) company_zip, (char*) company_city, (char*) company_phone, (char*)company_email,
         (char*) company_business_id);
 }
 
@@ -169,6 +170,14 @@ void testqueryInvoicesByCustomer()
     free_sql_error_details();
 }
 
+void testGetBillingEntity()
+{
+    _In_ int company_id = 1;
+    char* jsonStringCompany = NULL;
+    getCompany(_In_(int) company_id, _Out_(char**) & jsonStringCompany);
+    free_json_data();
+}
+
 
 int main(int argc, char *argv[])
 {
@@ -183,8 +192,9 @@ int main(int argc, char *argv[])
     //addCustomerFromJsonTest();
     //addCompanyJsonTest();
     //addCompanyTest();
-    //testUpdateCompany();
-    testEAN();
+    testUpdateCompany();
+    //testEAN();
+    //testGetBillingEntity();
     return 0;
 
     int del = updateInvoice(311, 1, "2024-03-01 0:00:00.0000000", "12783", 0, 0, 0, "2024-03-15", 0);

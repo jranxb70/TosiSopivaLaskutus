@@ -2616,9 +2616,9 @@ int addInvoice(
     _In_ int                    customer_id,
     _In_ SQL_TIMESTAMP_STRUCT   invoice_date,
     _In_ char*                  invoice_bankreference,
-    _In_ largeint                 invoice_subtotal,
-    _In_ largeint                 invoice_tax,
-    _In_ largeint                 invoice_total,
+    _In_ largeint               invoice_subtotal,
+    _In_ largeint               invoice_tax,
+    _In_ largeint               invoice_total,
     _In_ SQL_DATE_STRUCT        invoice_due_date,
     _Out_ int*                  invoice_idOut, 
     _Out_ node_t**              errorList)
@@ -2664,9 +2664,9 @@ int addInvoice(
         SQLBindParameter(hstmt, 2, SQL_PARAM_INPUT,  SQL_C_SLONG,          SQL_INTEGER,               0,  0, &customer_id,           0, NULL);
         SQLBindParameter(hstmt, 3, SQL_PARAM_INPUT,  SQL_C_TYPE_TIMESTAMP, SQL_TYPE_TIMESTAMP,        0,  7, &invoice_date,          0, NULL);
         SQLBindParameter(hstmt, 4, SQL_PARAM_INPUT,  SQL_C_CHAR,           SQL_VARCHAR,               20, 0, invoice_bankreference,  0, NULL);
-        SQLBindParameter(hstmt, 5, SQL_PARAM_INPUT,  SQL_C_SBIGINT, SQL_BIGINT, 0, 0, &invoice_subtotal,      0, NULL);
-        SQLBindParameter(hstmt, 6, SQL_PARAM_INPUT,  SQL_C_SBIGINT, SQL_BIGINT, 0, 0, &invoice_tax,           0, NULL);
-        SQLBindParameter(hstmt, 7, SQL_PARAM_INPUT,  SQL_C_SBIGINT, SQL_BIGINT, 0, 0, &invoice_total,         0, NULL);
+        SQLBindParameter(hstmt, 5, SQL_PARAM_INPUT,  SQL_C_SBIGINT,        SQL_BIGINT,                 0, 0, &invoice_subtotal,      0, NULL);
+        SQLBindParameter(hstmt, 6, SQL_PARAM_INPUT,  SQL_C_SBIGINT,        SQL_BIGINT,                 0, 0, &invoice_tax,           0, NULL);
+        SQLBindParameter(hstmt, 7, SQL_PARAM_INPUT,  SQL_C_SBIGINT,        SQL_BIGINT,                 0, 0, &invoice_total,         0, NULL);
 
         SQLBindParameter(hstmt, 8, SQL_PARAM_INPUT,  SQL_C_TYPE_DATE,      SQL_TYPE_DATE,             0,  0, &invoice_due_date,      0, NULL);
 

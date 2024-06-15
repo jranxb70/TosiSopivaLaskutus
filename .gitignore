@@ -366,3 +366,5 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 /enc_temp_folder
+/out_old/build/x64-Debug
+/build

@@ -178,6 +178,19 @@ void testGetBillingEntity()
     free_json_data();
 }
 
+void testAddInvoice()
+{
+    char str[2048] = "{\"customer_id\": 1, \"invoice_date\": \"2024-06-15 00:30:38.302746000\", \"invoice_subtotal\": 6300, \"invoice_total\": 7905, \"invoice_tax\": 1605, \"bank_reference\": \"\", \"invoice_due_date\": \"2024-06-29\", \"invoice_lines\": [{\"product_item_id\": 3, \"product_id\": 4, \"quantity\": 1, \"price\": 350, \"product_description\": \"\", \"subtotal\": 350, \"tax\": 89, \"total\": 439}])";
+    int len = strlen(str);
+
+
+    addNewInvoiceData(str, len);
+
+    /* free all objects under root and root itself */
+    //cJSON_Delete(customer_data);
+    //free(invoice_date_str);
+}
+
 
 int main(int argc, char *argv[])
 {
@@ -192,8 +205,9 @@ int main(int argc, char *argv[])
     //addCustomerFromJsonTest();
     //addCompanyJsonTest();
     //addCompanyTest();
-    testUpdateCompany();
-    //testEAN();
+    //testUpdateCompany();
+    testAddInvoice();
+    testEAN();
     //testGetBillingEntity();
     return 0;
 

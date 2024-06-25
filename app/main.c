@@ -143,7 +143,7 @@ void addCustomerFromJsonTest()
 void testGetCompaniesAsJson()
 {
     char* json = NULL;
-    int i;
+
     node_t* errorList = NULL;
     queryCustomersAsJson(&json, &errorList);
     free_json_data();

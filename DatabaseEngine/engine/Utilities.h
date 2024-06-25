@@ -19,7 +19,7 @@ void convertIntArrayToUnsignedCharArray(
 	_In_ int					length);
 
 DB_ENGINE_LIBRARY_EXPORT int decodeUTF8Encoding(
-	_In_ char*					encodedString, 
+	_In_ const char*					encodedString,
 	_Out_ char**				decodedString);
 
 void save_to_file(

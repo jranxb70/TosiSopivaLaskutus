@@ -720,7 +720,7 @@ int find_index_of_invoices_closing_bracket(const char* json, int start_index)
 }
 
 
-int decodeUTF8Encoding(_In_ char* encodedCharArray, _Out_ char** decodedCharArray)
+int decodeUTF8Encoding(_In_ const char* encodedCharArray, _Out_ char** decodedCharArray)
 {
     int lengthWithEncodedChars = strlen(encodedCharArray);
     *decodedCharArray = malloc(lengthWithEncodedChars + 1); // Allocate memory for decodedCharArray

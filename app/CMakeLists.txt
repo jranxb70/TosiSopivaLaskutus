@@ -2,11 +2,11 @@
 message("Running CMakeLists.txt for app...")
 
 set(HEADER_FILES
-    BankReferenceCalculator.h
+    
 )
 
 set(SOURCE_FILES
-    main.c BankReferenceCalculator.c
+    main.c 
 )
 
 set (LIBS

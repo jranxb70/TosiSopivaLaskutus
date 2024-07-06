@@ -97,6 +97,8 @@ extern "C" {
 		_In_ char*					invoicing_data_json, 
 		_In_ int					length);
 
+	int UpdateBankReference(long invoice_id);
+
 	void DB_ENGINE_LIBRARY_EXPORT createTables();
 
 	void DB_ENGINE_LIBRARY_EXPORT addCustomer(
@@ -128,6 +130,8 @@ extern "C" {
 		_In_ largeint				invoice_total,
 		_In_ char*					invoice_due_date,
 		_In_ largeint				invoice_outstanding_balance);
+
+	int DB_ENGINE_LIBRARY_EXPORT updateInvoiceFromJson(_In_ char* invoice_json_data, _Out_ char** error_msg);
 
 	int  DB_ENGINE_LIBRARY_EXPORT deleteInvoice(
 		_In_ long					invoice_id);
@@ -167,6 +171,8 @@ extern "C" {
 		_In_ char*					customer_email);
 
 	int  DB_ENGINE_LIBRARY_EXPORT free_json_data();
+
+	int DB_ENGINE_LIBRARY_EXPORT free_error_message();
 
 	void DB_ENGINE_LIBRARY_EXPORT free_sql_error_details();
 

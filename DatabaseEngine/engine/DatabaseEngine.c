@@ -38,6 +38,8 @@ SQLCHAR retcode[SQL_RETURN_CODE_LEN];
 */
 char* global_json_data = NULL;
 
+char* global_error_essage = NULL;
+
 
 /**
 * This function opens the connection to a database using an ODBC driver.
@@ -263,6 +265,16 @@ int free_json_data()
     free(global_json_data);
     global_json_data = NULL;
     done = 11;
+
+    return done;
+}
+
+int free_error_message()
+{
+    int done = 255;
+
+    free(global_error_essage);
+    global_error_essage = NULL;
 
     return done;
 }
@@ -558,6 +570,87 @@ int deleteInvoice(_In_ long invoice_id)
     dbClose();
 
     return countDeleted;
+}
+
+int updateInvoiceFromJson(_In_ char* invoice_json_data, _Out_ char** error_msg)
+{
+    int functionReturnValue = -3;
+    char fileName[21] = "connectionstring.txt";
+    DBERROR* err = NULL;
+    dbOpen(fileName, &err);
+
+    if (err->errorCode < 0)
+    {
+        free(err);
+        return -1;
+    }
+    int ret = err->errorCode;
+    free(err);
+    err = NULL;
+
+    char* invoice_json_data_converted = NULL;
+    decodeUTF8Encoding(invoice_json_data, &invoice_json_data_converted);
+
+    SQLHSTMT hstmt;
+    SQLRETURN retcode;
+
+    // Assuming the database connection is already established
+
+    char query[512] = "{CALL UpdateInvoiceFromJson(?)}";
+
+    // Allocate a statement handle
+    retcode = SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
+    if (retcode != SQL_SUCCESS && retcode != SQL_SUCCESS_WITH_INFO) {
+        fprintf(stderr, "Failed to allocate statement handle.\n");
+        goto exit;
+    }
+
+    // Prepare the SQL statement to call the stored procedure
+    retcode = SQLPrepare(hstmt, (SQLCHAR*)query, SQL_NTS);
+    if (retcode != SQL_SUCCESS && retcode != SQL_SUCCESS_WITH_INFO) {
+        fprintf(stderr, "Failed to prepare SQL statement.\n");
+        goto exit;
+    }
+
+    // Bind the JSON input parameter
+    retcode = SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 0, 0, invoice_json_data_converted, strlen(invoice_json_data_converted), NULL);
+
+    if (retcode != SQL_SUCCESS && retcode != SQL_SUCCESS_WITH_INFO) {
+        SQLCHAR sqlstate[6];
+        SQLINTEGER native_error;
+        SQLCHAR message_text[SQL_MAX_MESSAGE_LENGTH];
+        SQLSMALLINT text_length;
+
+        SQLGetDiagRec(SQL_HANDLE_STMT, hstmt, 1, sqlstate, &native_error, message_text, sizeof(message_text), &text_length);
+        fprintf(stderr, "Failed to execute SQL statement. Error: %s\n", message_text);
+        *error_msg = strdup(message_text);
+        global_error_essage = *error_msg;
+
+        goto exit;
+    }
+
+    // Execute the statement
+    retcode = SQLExecute(hstmt);
+
+    if (retcode != SQL_SUCCESS && retcode != SQL_SUCCESS_WITH_INFO) {
+        SQLCHAR sqlstate[6];
+        SQLINTEGER native_error;
+        SQLCHAR message_text[SQL_MAX_MESSAGE_LENGTH];
+        SQLSMALLINT text_length;
+
+        SQLGetDiagRec(SQL_HANDLE_STMT, hstmt, 1, sqlstate, &native_error, message_text, sizeof(message_text), &text_length);
+        fprintf(stderr, "Failed to execute SQL statement. Error: %s\n", message_text);
+        *error_msg = strdup(message_text);
+        global_error_essage = *error_msg;
+
+        goto exit;
+    }
+
+exit:
+    SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
+    free(invoice_json_data_converted);
+    dbClose();
+    return retcode;
 }
 
 /**
@@ -1511,13 +1604,13 @@ void addCompany(
     err = NULL;
 
     char* company_name_converted = NULL;
-    decodeUTF8Encoding(company_name, &company_name_converted);
+    decodeUTF8Encoding((char*) company_name, &company_name_converted);
 
     char* company_address_converted = NULL;
-    decodeUTF8Encoding(company_address, &company_address_converted);
+    decodeUTF8Encoding((char*)company_address, &company_address_converted);
 
     char* company_city_converted = NULL;
-    decodeUTF8Encoding(company_city, &company_city_converted);
+    decodeUTF8Encoding((char*)company_city, &company_city_converted);
 
     SQLHSTMT hstmt;
     SQLRETURN retcode;
@@ -1569,7 +1662,7 @@ void addCompany(
         goto exit;
     }
 
-    retcode = SQLBindParameter(hstmt, 4, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 6, 0, company_zip, 0, NULL);
+    retcode = SQLBindParameter(hstmt, 4, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 6, 0, (char*)company_zip, 0, NULL);
     if (retcode != SQL_SUCCESS && retcode != SQL_SUCCESS_WITH_INFO) {
         fprintf(stderr, "Failed to bind company_zip parameter.\n");
         goto exit;
@@ -1581,13 +1674,13 @@ void addCompany(
         goto exit;
     }
 
-    retcode = SQLBindParameter(hstmt, 6, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 20, 0, company_phone, 0, NULL);
+    retcode = SQLBindParameter(hstmt, 6, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 20, 0, (char*)company_phone, 0, NULL);
     if (retcode != SQL_SUCCESS && retcode != SQL_SUCCESS_WITH_INFO) {
         fprintf(stderr, "Failed to bind company_phone parameter.\n");
         goto exit;
     }
 
-    retcode = SQLBindParameter(hstmt, 7, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 20, 0, company_business_id, 0, NULL);
+    retcode = SQLBindParameter(hstmt, 7, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 20, 0, (char*)company_business_id, 0, NULL);
     if (retcode != SQL_SUCCESS && retcode != SQL_SUCCESS_WITH_INFO) {
         fprintf(stderr, "Failed to bind company_business_id parameter.\n");
         goto exit;
@@ -1752,7 +1845,7 @@ void addCompanyFromJson(_In_ const char* companyJson, _Out_ SQLINTEGER* company_
     err = NULL;
 
     char* company_json_converted = NULL;
-    decodeUTF8Encoding(companyJson, &company_json_converted);
+    decodeUTF8Encoding((char*)companyJson, &company_json_converted);
 
     SQLHSTMT hstmt;
     SQLRETURN retcode;
@@ -1817,10 +1910,9 @@ void addCompanyFromJson(_In_ const char* companyJson, _Out_ SQLINTEGER* company_
         }
     }
 
-    free(company_json_converted);
-
     // Clean up
 exit:
+    free(company_json_converted);
     SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
     dbClose();
     return;
@@ -1847,7 +1939,7 @@ SQLRETURN updateCompany(
     if (err->errorCode < 0)
     {
         free(err);
-        return;
+        return SQL_ERROR;
     }
     free(err);
     err = NULL;
@@ -2520,7 +2612,7 @@ void addInvoiceLine(
     //_In_ char* invoiceline_product,
     _In_ int                    product_item_id,
     _In_ int                    invoiceline_quantity,
-    _In_ largeint                 invoiceline_price,
+    _In_ largeint               invoiceline_price,
     _In_ char*                  product_description)
 {
     char fileName[21] = "connectionstring.txt";
@@ -2559,7 +2651,7 @@ void addInvoiceLine(
         SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER,   0, 0, &invoice_id,           0, NULL);
         SQLBindParameter(hstmt, 2, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER,   0, 0, &product_item_id,      0, NULL);
         SQLBindParameter(hstmt, 3, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER,   0, 0, &invoiceline_quantity, 0, NULL);
-        SQLBindParameter(hstmt, 4, SQL_PARAM_INPUT, SQL_C_SBIGINT, SQL_DECIMAL, 10, 2, &invoiceline_price,    0, NULL);
+        SQLBindParameter(hstmt, 4, SQL_PARAM_INPUT, SQL_C_SBIGINT, SQL_BIGINT, 10, 2, &invoiceline_price,    0, NULL);
 
         SQLBindParameter(hstmt, 5, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 1024, 0, product_description_decoded, 0, NULL);
         // Prepare the SQL statement
@@ -3246,12 +3338,14 @@ int addNewInvoiceData(_In_ char* invoicing_data_json, _In_ int length)
             _In_(int)                      id->valueint,
             _In_                           myTimestamp,
             _In_(char*)                    bankRef->valuestring,
-            _In_(largeint)                   invoice_subtotal->valuedouble,
-            _In_(largeint)                   invoice_tax->valuedouble,
-            _In_(largeint)                   invoice_total->valuedouble,
+            _In_(largeint)                 invoice_subtotal->valueint,
+            _In_(largeint)                 invoice_tax->valueint,
+            _In_(largeint)                 invoice_total->valueint,
             _In_                           invoiceDueDate,
             _Out_(int*)                    &invoice_id, 
                                            &errs);
+
+        int val2 = UpdateBankReference(invoice_id);
 
         if (errs != NULL)
         {
@@ -3304,7 +3398,7 @@ int addNewInvoiceData(_In_ char* invoicing_data_json, _In_ int length)
                 _In_(int)                    invoice_id,
                 _In_(int)                    product_item_id->valueint, // invoiceline_product
                 _In_(int)                    quantity->valueint,        // invoiceline_quantity
-                _In_(double)                 price->valuedouble,      // invoiceline_price
+                _In_(double)                 price->valueint,      // invoiceline_price
                                              product_description->valuestring);
         }
 
@@ -3320,3 +3414,91 @@ exit:
     return -1;
 }
 
+int UpdateBankReference(long invoice_id)
+{
+    SQLHSTMT hstmt;
+    SQLRETURN retcode;
+
+    long invoice_id_to_bankreference = invoice_id + 100;
+
+    long reference_out;
+
+    calcNewReference(invoice_id_to_bankreference, &reference_out);
+
+    char* invoice_bankreference = (char*)malloc(21 * sizeof(char)); // Allocate memory for the string
+    if (invoice_bankreference == NULL) {
+        // Handle memory allocation failure
+        fprintf(stderr, "Memory allocation failed\n");
+        exit(1);
+    }
+
+    // Convert the long to a string
+    sprintf(invoice_bankreference, "%ld", reference_out);
+
+    //char invoice_bankreference[21] = "1234561";
+
+    int ret = -1;
+
+    char query[1024];
+    size_t bufferCount = 1024;
+    sprintf_s(query, bufferCount,
+        "{CALL dbo.UpdateInvoiceBankReference (?, ?)}");
+
+    // Allocate a statement handle
+    retcode = SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
+    if (retcode != SQL_SUCCESS && retcode != SQL_SUCCESS_WITH_INFO) {
+        fprintf(stderr, "Failed to allocate statement handle.\n");
+        goto exit;
+    }
+
+    // Prepare the SQL statement to call the stored procedure
+    retcode = SQLPrepare(hstmt, (SQLCHAR*)query, SQL_NTS);
+    if (retcode != SQL_SUCCESS && retcode != SQL_SUCCESS_WITH_INFO) {
+        fprintf(stderr, "Failed to prepare SQL statement.\n");
+        goto exit;
+    }
+
+    SQLINTEGER id;
+    retcode = SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER, 0, 0, &invoice_id, 0, NULL);
+
+    retcode = SQLBindParameter(hstmt, 2, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 20, 0, invoice_bankreference, 0, NULL);
+
+    // Prepare the SQL statement
+    ret = SQLPrepare(hstmt, query, SQL_NTS);
+    if (SQL_SUCCEEDED(ret))
+    {
+        // Execute the query
+        ret = SQLExecute(hstmt);
+        // Check for success or info
+        if (ret == SQL_SUCCESS_WITH_INFO || ret == SQL_ERROR)
+        {
+            SQLLEN numRecs = 0;
+            SQLGetDiagField(SQL_HANDLE_STMT, hstmt, 0, SQL_DIAG_NUMBER, &numRecs, 0, 0);
+
+            // Retrieve diagnostic records
+            for (SQLSMALLINT i = 1; i <= numRecs; ++i)
+            {
+                SQLCHAR sqlState[6];
+                SQLINTEGER nativeError;
+                SQLCHAR errorMsg[SQL_MAX_MESSAGE_LENGTH];
+                SQLSMALLINT msgLen;
+
+                ret = SQLGetDiagRec(SQL_HANDLE_STMT, hstmt, i, sqlState, &nativeError, errorMsg, sizeof(errorMsg), &msgLen);
+                if (ret != SQL_NO_DATA) {
+                    DisplayError(sqlState, nativeError, errorMsg, msgLen);
+                }
+            }
+
+            if (ret == SQL_ERROR)
+            {
+                goto exit;
+            }
+        }
+    }
+
+exit:
+    // Free the statement handle
+    free(invoice_bankreference);
+    SQLFreeHandle(SQL_HANDLE_STMT, hstmt);
+    return ret;
+}

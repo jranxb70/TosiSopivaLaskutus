@@ -3,29 +3,28 @@ message("Running CMakeLists.txt for databaseengine...")
 
 # Collect sources into CMake variables. You can use regular expressions, but CMake 
 # recommends explicitly listing each source. We'll do that for the advanced subfolder.
-file(GLOB ENGINE_HEADERS "*.h")
-set(ENGINE_SOURCES  "engine/DatabaseEngine.h" 
-                    "engine/DatabaseEngine.c"
-                    "engine/DatabaseUtility.h" 
-                    "engine/DatabaseUtility.c" 
-                    "engine/Utilities.h" 
-                    "engine/Utilities.c" 
-                    "engine/SqlErrorUtil.h" 
-                    "engine/SqlErrorUtil.c" 
-                    "engine/list.h" 
-                    "engine/list.c"
-		    "engine/cJSON.h"
-		    "engine/cJSON.c")
+file(GLOB ENGINE_HEADERS "engine/*.h")
+set(ADDITIONAL_HEADERS "DBEngineLibraryExports.h")
 
+set(ENGINE_SOURCES   
+                    "engine/DatabaseEngine.c"
+                    "engine/DatabaseUtility.c"
+                    "engine/Utilities.c"
+                    "engine/SqlErrorUtil.c" 
+                    "engine/list.c"
+ 	                "engine/cJSON.c"
+                    "engine/BankReferenceCalculator.c")
+                    # Remove "engine/manifest.rc"
 
 # If we just add those collected sources to the project, the folder structure will be
 # lost, so we add those back explicitly. The empty stores files at the project level.
-source_group("" FILES ${ENGINE_HEADERS})
-source_group("engine" FILES ${ENGINE_SOURCES})
+source_group("Header Files" FILES ${ENGINE_HEADERS})
+source_group("Source Files" FILES ${ENGINE_SOURCES})
 
 # Include this folder as a search directory for headers. Equivalent to
 # Properties -> C/C++ -> General -> Additional Include Directories
-include_directories(.)
+include_directories(engine)
+include_directories(${CMAKE_SOURCE_DIR}/DatabaseEngine)
 
 # Create engine.dll with the listed sources collected in the variables. Equivalent to 
 # setting Properties -> General -> Configuration Type to Dynamic Library(.dll)

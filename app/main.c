@@ -5,7 +5,7 @@
 #include "engine/cJSON.h"
 #include "engine/DatabaseEngine.h"
 #include "engine/Utilities.h"
-#include "BankReferenceCalculator.h"
+//#include "BankReferenceCalculator.h"
 
 void queryInvoiceByInvoiceId();
 
@@ -180,7 +180,7 @@ void testGetBillingEntity()
 
 void testAddInvoice()
 {
-    char str[2048] = "{\"customer_id\": 1, \"invoice_date\": \"2024-06-15 00:30:38.302746000\", \"invoice_subtotal\": 6300, \"invoice_total\": 7905, \"invoice_tax\": 1605, \"bank_reference\": \"\", \"invoice_due_date\": \"2024-06-29\", \"invoice_lines\": [{\"product_item_id\": 3, \"product_id\": 4, \"quantity\": 1, \"price\": 350, \"product_description\": \"\", \"subtotal\": 350, \"tax\": 89, \"total\": 439}])";
+    char str[2048] = "{\"customer_id\": 1, \"invoice_date\": \"2024-06-15 00:30:38.302746000\", \"invoice_subtotal\": 6300, \"invoice_total\": 7905, \"invoice_tax\": 1605, \"bank_reference\": \"\", \"invoice_due_date\": \"2024-06-29\", \"invoice_lines\": [{\"product_item_id\": 3, \"product_id\": 4, \"quantity\": 1, \"price\": 350, \"product_description\": \"\", \"subtotal\": 350, \"tax\": 89, \"total\": 439}]}";
     int len = strlen(str);
 
 
@@ -189,6 +189,14 @@ void testAddInvoice()
     /* free all objects under root and root itself */
     //cJSON_Delete(customer_data);
     //free(invoice_date_str);
+}
+
+void testUpdateInvoice()
+{
+    char* error_msg = NULL;
+    char invoice_json_data[2048] = "{\"invoice_id\": 1, \"customer_id\": 1, \"invoice_date\": \"2024-06-15 00:30:38.302746000\", \"invoice_subtotal\": 6300, \"invoice_total\": 7905, \"invoice_tax\": 1605, \"bank_reference\": \"\", \"invoice_due_date\": \"2024-06-29\", \"invoice_lines\": [{\"product_item_id\": 3, \"product_id\": 4, \"quantity\": 1, \"price\": 350, \"product_description\": \"\", \"subtotal\": 350, \"tax\": 89, \"total\": 439}]}";
+    updateInvoiceFromJson(invoice_json_data, &error_msg);
+    free_error_message();
 }
 
 
@@ -206,6 +214,7 @@ int main(int argc, char *argv[])
     //addCompanyJsonTest();
     //addCompanyTest();
     //testUpdateCompany();
+    //testUpdateInvoice();
     testAddInvoice();
     testEAN();
     //testGetBillingEntity();
@@ -323,7 +332,7 @@ int main(int argc, char *argv[])
     int bankreferenceOut = 0;
     int* ref = NULL;
     ref = &bankreferenceOut;
-    calcNewReference(bankreference, ref);
+    //calcNewReference(bankreference, ref);
 
     char invoice_bankreference[20]; // Buffer big enough for a 32-bit number
 

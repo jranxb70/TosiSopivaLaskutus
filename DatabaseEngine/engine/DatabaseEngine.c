@@ -2648,10 +2648,10 @@ void addInvoiceLine(
         // Allocate a statement handle
         SQLAllocHandle(SQL_HANDLE_STMT, hdbc, &hstmt);
 
-        SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER,   0, 0, &invoice_id,           0, NULL);
-        SQLBindParameter(hstmt, 2, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER,   0, 0, &product_item_id,      0, NULL);
-        SQLBindParameter(hstmt, 3, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER,   0, 0, &invoiceline_quantity, 0, NULL);
-        SQLBindParameter(hstmt, 4, SQL_PARAM_INPUT, SQL_C_SBIGINT, SQL_BIGINT, 10, 2, &invoiceline_price,    0, NULL);
+        SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT, SQL_C_SLONG,   SQL_INTEGER,   0, 0, &invoice_id,           0, NULL);
+        SQLBindParameter(hstmt, 2, SQL_PARAM_INPUT, SQL_C_SLONG,   SQL_INTEGER,   0, 0, &product_item_id,      0, NULL);
+        SQLBindParameter(hstmt, 3, SQL_PARAM_INPUT, SQL_C_SLONG,   SQL_INTEGER,   0, 0, &invoiceline_quantity, 0, NULL);
+        SQLBindParameter(hstmt, 4, SQL_PARAM_INPUT, SQL_C_SBIGINT, SQL_BIGINT,   10, 2, &invoiceline_price,    0, NULL);
 
         SQLBindParameter(hstmt, 5, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 1024, 0, product_description_decoded, 0, NULL);
         // Prepare the SQL statement
@@ -3398,7 +3398,7 @@ int addNewInvoiceData(_In_ char* invoicing_data_json, _In_ int length)
                 _In_(int)                    invoice_id,
                 _In_(int)                    product_item_id->valueint, // invoiceline_product
                 _In_(int)                    quantity->valueint,        // invoiceline_quantity
-                _In_(double)                 price->valueint,      // invoiceline_price
+                _In_(largeint)               price->valueint,           // invoiceline_price
                                              product_description->valuestring);
         }
 

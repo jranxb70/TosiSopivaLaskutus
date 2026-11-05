@@ -1,3 +1,9 @@
+> **Legacy native engine:** the migrated TosiSopivaUIFlet uses the managed
+> engine in `jranxb70/DBManagementApp` on Windows and Linux. This C implementation
+> is retained for historical reference. Its global handles/buffers, fixed-size
+> JSON results and nontransactional invoice paths are replaced by the managed
+> implementation; the archived native paths have not been repaired.
+
 TosiSopivaLaskutus
 ==========================
 This project makes possible to add customer, invoice and invoice line data to a database. If some items are added to the database, they also can be printed on command prompt.
